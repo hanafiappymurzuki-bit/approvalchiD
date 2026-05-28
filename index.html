@@ -1,0 +1,2955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kelulusan e-Chit JKR</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+    
+    <!-- PDF.js Library Untuk Render Drawing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+    <style>
+        :root {
+            --primary: #1E3A8A;
+            --accent: #2563EB;
+            --bg-color: #F8FAFC;
+            --border-color: #E2E8F0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; 
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .form-panel {
+            width: 40%;
+            background-color: #ffffff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .form-header {
+            padding: 20px;
+            background: var(--primary);
+            color: white;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .preview-panel {
+            width: 60%;
+            background-color: #525659;
+            overflow-y: auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: width 0.3s ease;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        @media (max-width: 992px) {
+            .app-container { flex-direction: column; overflow-y: visible; height: auto; }
+            .form-panel, .preview-panel { width: 100%; height: auto; border-right: none; }
+            .preview-panel { padding: 15px 5px; }
+            .form-body { padding-bottom: 90px !important; }
+            
+            #actionButtonsContainer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                z-index: 1000;
+                background: white;
+                box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
+                padding: 15px !important;
+                border-top: 1px solid var(--border-color);
+            }
+        }
+
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #475569; margin-bottom: 0.3rem; }
+        .form-control, .form-select { border-color: var(--border-color); border-radius: 6px; font-size: 0.9rem; }
+        .form-control:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25); }
+        .accordion-button:not(.collapsed) { background-color: #EFF6FF; color: var(--primary); font-weight: 600; }
+        .accordion-button { font-weight: 500; padding: 12px 20px; }
+        
+        .signature-box {
+            border: 1px dashed var(--accent);
+            border-radius: 6px;
+            background: #f8fafc;
+            width: 100%;
+            max-width: 100%;
+            height: 120px;
+            cursor: crosshair;
+            margin-bottom: 5px;
+            touch-action: none; 
+        }
+
+        .a4-paper {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            padding: 10mm 15mm 10mm 15mm;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000;
+            font-size: 10.5px;
+            line-height: 1.25;
+            position: relative;
+            transform-origin: top center; 
+        }
+
+        .border-bottom-dash { border-bottom: 1px dashed #000; display: inline-block; padding-left: 5px; width: 100%; min-height: 15px;}
+        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+        .pdf-table > tbody > tr > td { border: 1px solid #000; padding: 3px 5px; vertical-align: top; }
+        .no-border-right { border-right: none !important; }
+        .no-border-left { border-left: none !important; }
+        .section-title { font-weight: bold; background-color: transparent; }
+        .section-subtitle { font-weight: normal; font-size: 11px; }
+        .inner-layout { width: 100%; border-collapse: collapse; border: none; }
+        .inner-layout td { border: none !important; padding: 2px; vertical-align: top; }
+        .sign-image-container { height: 50px; margin: 1px 0; display: flex; align-items: flex-end; justify-content: flex-start; gap: 10px; }
+        .sign-img { max-height: 100%; max-width: 150px; }
+        .dynamic-text { font-family: 'Inter', sans-serif; color: #1e3a8a; font-weight: 500; font-style: italic; }
+        .page-break { page-break-before: always; }
+        
+        .img-grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .img-grid-container img {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+        }
+
+        .disclaimer-text { font-size: 10px; text-align: justify; margin-top: 10px; line-height: 1.2; }
+
+        .role-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #121212; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50; 
+        }
+        .role-card {
+            background: #FFD100; 
+            padding: 3rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            border: 4px solid #000;
+            text-align: center;
+            max-width: 650px;
+            width: 90%;
+        }
+        .role-btn {
+            flex: 1;
+            padding: 2rem 1rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease-in-out;
+            border: 3px solid transparent;
+        }
+        .role-btn.btn-dark {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            border-color: #000000;
+        }
+        .role-btn.btn-dark:hover {
+            background-color: #000000;
+            border-color: #ffffff;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        .dashboard-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            z-index: 50; 
+            overflow-y: auto;
+        }
+        .folder-card {
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid var(--border-color) !important;
+            background-color: white;
+        }
+        .folder-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+            border-color: var(--accent) !important;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ROLE SELECTION SCREEN -->
+<div id="roleSelectionScreen" class="role-screen">
+    <div class="role-card">
+        <img src="./logo.png" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Logo_JKR.svg/1200px-Logo_JKR.svg.png'" alt="JKR Sarawak Logo" style="height: 110px; margin-bottom: 25px; object-fit: contain;">
+        
+        <h3 class="fw-bold mb-2" style="color: #000; text-transform: uppercase; letter-spacing: 1px;">Sistem e-Chit Kelulusan</h3>
+        <p class="mb-4" style="color: #222; font-weight: 600; font-size: 0.95rem;">Sila pilih mod log masuk anda untuk meneruskan operasi.</p>
+        
+        <div class="d-flex gap-3 justify-content-center flex-wrap mb-2">
+            <button class="btn btn-dark role-btn" onclick="selectRole('contractor')">
+                <i class="bi bi-person-workspace d-block mb-2" style="font-size: 2.5rem; color: #FFD100;"></i>
+                <span class="fw-bold" style="font-size: 1.1rem; letter-spacing: 0.5px;">Mod Kontraktor</span>
+                <small class="d-block mt-2" style="font-size: 0.8rem; color: #aaa;">Mohon Chit & Upload Gambar</small>
+            </button>
+            <button class="btn btn-dark role-btn" onclick="showOfficerLogin()">
+                <i class="bi bi-shield-check d-block mb-2" style="font-size: 2.5rem; color: #FFD100;"></i>
+                <span class="fw-bold" style="font-size: 1.1rem; letter-spacing: 0.5px;">Mod Pegawai</span>
+                <small class="d-block mt-2" style="font-size: 0.8rem; color: #aaa;">Semak & Luluskan Chit</small>
+            </button>
+        </div>
+        
+        <div id="cloudStatusMsg" class="mt-4 p-2 rounded text-center fw-bold" style="font-size: 0.85rem; background: #fff; border: 1px solid #ccc; color: #555;">
+            <span class="spinner-border spinner-border-sm me-1"></span> Menyambung ke Pangkalan Data Cloud...
+        </div>
+    </div>
+</div>
+
+<!-- OFFICER DASHBOARD SCREEN -->
+<div id="officerDashboardScreen" class="dashboard-screen" style="display: none;">
+    <div class="container py-5 max-w-4xl" style="max-width: 900px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-3">
+            <div>
+                <h4 class="fw-bold text-primary mb-1"><i class="bi bi-shield-check me-2"></i>Dashboard Pegawai</h4>
+                <span class="text-muted" style="font-size: 0.9rem;">Sistem Pemantauan Kerja (Job Monitoring)</span>
+            </div>
+            <div>
+                <button class="btn btn-outline-secondary btn-sm fw-bold me-2" onclick="showOfficerSettings()">
+                    <i class="bi bi-gear-fill me-1"></i> Tetapan
+                </button>
+                <button class="btn btn-outline-danger btn-sm fw-bold" onclick="goHomeFromDashboard()">
+                    <i class="bi bi-box-arrow-left me-1"></i> Log Keluar
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white text-primary border-end-0"><i class="bi bi-search"></i></span>
+                <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Cari No. Chit, Nama Projek, atau Jenis Kerja..." onkeyup="executeSearch()">
+            </div>
+        </div>
+        
+        <div id="dashboardContent">
+        </div>
+    </div>
+</div>
+
+<div class="app-container" id="mainApp" style="display: none;">
+    
+    <!-- LEFT PANEL 1: MAIN FORM -->
+    <div class="form-panel" id="mainFormPanel">
+        <div class="form-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm btn-light text-primary shadow-sm" onclick="goHome()" title="Kembali ke Laman Utama">
+                    <i class="bi bi-house-door-fill"></i>
+                </button>
+                <div>
+                    <h5 class="mb-0 fw-bold">Approval Chit System</h5>
+                    <small class="text-white-50">Contractor & Officer Portal</small>
+                </div>
+            </div>
+            <div>
+                <span id="roleBadge" class="badge bg-light text-primary me-2 shadow-sm">Pilih Mode</span>
+            </div>
+        </div>
+        
+        <div class="form-body">
+            <div class="accordion" id="formAccordion">
+                
+                <div class="accordion-item border-0 border-bottom" id="collapseHeader_wrapper">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHeader">
+                            <i class="bi bi-info-circle me-2"></i> Document Header
+                        </button>
+                    </h2>
+                    <div id="collapseHeader" class="accordion-collapse collapse show" data-bs-parent="#formAccordion">
+                        <div class="accordion-body bg-light" id="headerInputsDiv">
+                            <div class="mb-3">
+                                <label class="form-label">Nama Syarikat</label>
+                                <input type="text" class="form-control dynamic-input" id="inCompanyName" data-target="outCompanyName" placeholder="Masukkan nama syarikat...">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Project Name</label>
+                                <textarea class="form-control dynamic-input" id="inProject" data-target="outProject" rows="2" placeholder="Enter full project name..."></textarea>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Contract No.</label>
+                                    <input type="text" class="form-control dynamic-input" id="inContract" data-target="outContract" placeholder="e.g. JKR/SWK/2026/01">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Chit No.</label>
+                                    <input type="text" class="form-control dynamic-input" id="inChit" data-target="outChit" value="1">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Type of Works</label>
+                                <select class="form-select dynamic-input" id="inWorkType">
+                                    <option value="EARTH WORKS">Earth Works</option>
+                                    <option value="PAVEMENT WORKS">Pavement Works</option>
+                                    <option value="DRAINAGE WORKS">Drainage Works</option>
+                                    <option value="BRIDGE WORKS">Bridge Works</option>
+                                    <option value="OTHER WORKS">Other Works (Please Specify)</option>
+                                </select>
+                            </div>
+                            <div class="mb-2" id="otherWorkDiv" style="display: none;">
+                                <label class="form-label">Specify Other Work</label>
+                                <input type="text" class="form-control dynamic-input" id="inOtherWork" placeholder="Sila nyatakan jenis kerja...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-0 border-bottom" id="collapsePartA_wrapper">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePartA" id="partAAccordionBtn">
+                            <i class="bi bi-person-workspace me-2"></i> PART A (Contractor)
+                        </button>
+                    </h2>
+                    <div id="collapsePartA" class="accordion-collapse collapse show" data-bs-parent="#formAccordion">
+                        <div class="accordion-body bg-light">
+                            
+                            <!-- BAHAGIAN PEMOHON (SUBMITTED BY & UPLOADS) -->
+                            <div id="partAInputsDiv">
+                                <div class="mb-3">
+                                    <label class="form-label">Work Description</label>
+                                    <textarea class="form-control dynamic-input" id="inWorkDesc" data-target="outWorkDesc" rows="3" placeholder="Description of inspection requested..."></textarea>
+                                </div>
+                                
+                                <div class="card shadow-sm mb-3 border-0">
+                                    <div class="card-body p-3">
+                                        <h6 class="text-primary mb-3" style="font-size: 0.85rem; font-weight: 700;">Submitted By</h6>
+                                        <div class="mb-3">
+                                            <canvas id="padSubmit" class="signature-box"></canvas>
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPad(padSubmitObj, 'outSignSubmit')">Clear Sign</button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Name</label>
+                                            <input type="text" class="form-control dynamic-input" id="inNameSubmit" data-target="outNameSubmit" placeholder="Enter your name">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Position/Role</label>
+                                            <input type="text" class="form-control dynamic-input" id="inRoleSubmit" data-target="outRoleSubmit" placeholder="Enter position/role">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Date</label>
+                                            <input type="date" class="form-control dynamic-input" id="inDateSubmit" data-target="outDateSubmit">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-primary"><i class="bi bi-patch-check me-1"></i> Upload Cop Syarikat (Imej)</label>
+                                    <input class="form-control form-control-sm" type="file" id="inCompanyStamp" accept="image/*">
+                                    <small class="text-muted d-block mt-1">Cop ini akan dipaparkan secara automatik di ruangan 'Checked By' (Muka Surat 1).</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-primary"><i class="bi bi-file-earmark-pdf me-1"></i> Upload Drawing (PDF)</label>
+                                    <input class="form-control" type="file" id="inDrawing" accept="application/pdf">
+                                    <small class="text-muted d-block mt-1">Drawing akan ditambah sebagai Page 2 dan dipaparkan melintang (horizontal) jika sesuai.</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-primary"><i class="bi bi-camera me-1"></i> Site Photos (Max 4)</label>
+                                    <input class="form-control" type="file" id="inImages" accept="image/*" multiple max="4">
+                                    <small class="text-muted d-block mt-1">Selesai mengisi borang dan memuat naik gambar, anda boleh klik butang Simpan di bawah untuk menjana pautan "Checked By".</small>
+                                </div>
+                            </div>
+
+                            <!-- BAHAGIAN PENYEMAK (CHECKED BY) -->
+                            <div class="card shadow-sm mt-4 border-0" id="checkedByCard" style="display: none;">
+                                <div class="card-body p-3 bg-white rounded border border-warning border-2">
+                                    <h6 class="text-warning text-dark mb-3 fw-bold" style="font-size: 0.95rem;">
+                                        <i class="bi bi-pencil-square me-1"></i> Ruangan Penyemak (Checked By)
+                                    </h6>
+                                    <div class="alert alert-secondary py-2" style="font-size: 0.8rem;">Sila semak maklumat pemohon di paparan kanan dan turunkan tandatangan pengesahan anda di sini.</div>
+                                    <div class="mb-3">
+                                        <canvas id="padCheck" class="signature-box"></canvas>
+                                        <div class="d-flex justify-content-end">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPad(padCheckObj, 'outSignCheck')">Clear Sign</button>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" class="form-control dynamic-input" id="inNameCheck" data-target="outNameCheck" placeholder="Enter checked by name">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Position/Role</label>
+                                        <input type="text" class="form-control dynamic-input" id="inRoleCheck" data-target="outRoleCheck" placeholder="Enter position/role">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Date</label>
+                                        <input type="date" class="form-control dynamic-input" id="inDateCheck" data-target="outDateCheck">
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-0" id="officerSectionItem">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOfficer">
+                            <i class="bi bi-shield-check me-2"></i> PART B & C (Officer Mode)
+                        </button>
+                    </h2>
+                    <div id="collapseOfficer" class="accordion-collapse collapse" data-bs-parent="#formAccordion">
+                        <div class="accordion-body bg-light">
+                            <div class="alert alert-warning text-dark py-2" style="font-size: 0.8rem;">
+                                Sila pastikan anda menyimpan kemas kini (Save as Draft) selepas melengkapkan bahagian anda.
+                            </div>
+                            
+                            <!-- PEGAWAI 1: RECEIVED BY -->
+                            <div id="officerReceivedByDiv" style="display: none;">
+                                <div class="card shadow-sm mb-3 border-0">
+                                    <div class="card-body p-3">
+                                        <h6 class="text-primary mb-3" style="font-size: 0.85rem; font-weight: 700;">PART B: Received By (Pegawai 1)</h6>
+                                        <div class="mb-3">
+                                            <canvas id="padReceived1" class="signature-box"></canvas>
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPad(padReceived1Obj, 'outSignReceived1')">Clear Sign</button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Name</label>
+                                            <input type="text" class="form-control dynamic-input" id="inNameReceived1" data-target="outNameReceived1" placeholder="Enter receiver name">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Position/Role</label>
+                                            <input type="text" class="form-control dynamic-input" id="inRoleReceived1" data-target="outRoleReceived1" placeholder="Enter position/role">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Date</label>
+                                            <input type="date" class="form-control dynamic-input" id="inDateReceived1" data-target="outDateReceived1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PEGAWAI 2: SO REPRESENTATIVE -->
+                            <div id="officerSODiv" style="display: none;">
+                                <div class="card shadow-sm mb-3 border-0">
+                                    <div class="card-body p-3">
+                                        <h6 class="text-primary mb-3" style="font-size: 0.85rem; font-weight: 700;">Inspection Details & SO Endorsement (Pegawai 2)</h6>
+                                        <div class="d-flex flex-column gap-3 mb-4">
+                                            <div class="p-2 border rounded bg-white">
+                                                <label class="form-label fw-bold text-dark mb-2" style="font-size: 0.8rem;">1) Certification/Approval of materials</label>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT1_1Type" data-target="outT1_1Type" placeholder="Type 1"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="1_1"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="1_1"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="1_1"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT1_2Type" data-target="outT1_2Type" placeholder="Type 2"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="1_2"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="1_2"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="1_2"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT1_3Type" data-target="outT3_3Type" placeholder="Type 3"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="1_3"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="1_3"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="1_3"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT1_4Type" data-target="outT1_4Type" placeholder="Type 4"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="1_4"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="1_4"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="1_4"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="p-2 border rounded bg-white">
+                                                <label class="form-label fw-bold text-dark mb-2" style="font-size: 0.8rem;">2) Inspection of Prior Work</label>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT2_1Type" data-target="outT2_1Type" placeholder="Type 1"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="2_1"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="2_1"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="2_1"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT2_2Type" data-target="outT2_2Type" placeholder="Type 2"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="2_2"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="2_2"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="2_2"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT2_3Type" data-target="outT2_3Type" placeholder="Type 3"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="2_3"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="2_3"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="2_3"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT2_4Type" data-target="outT2_4Type" placeholder="Type 4"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="2_4"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="2_4"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="2_4"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="p-2 border rounded bg-white">
+                                                <label class="form-label fw-bold text-dark mb-2" style="font-size: 0.8rem;">3) Testing of Prior Work</label>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT3_1Type" data-target="outT3_1Type" placeholder="Type 1"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="3_1"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="3_1"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="3_1"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT3_2Type" data-target="outT3_2Type" placeholder="Type 2"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="3_2"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="3_2"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="3_2"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT3_3Type" data-target="outT3_3Type" placeholder="Type 3"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="3_3"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="3_3"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="3_3"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-1 mb-1 align-items-center">
+                                                    <div class="col-6"><input type="text" class="form-control form-control-sm dynamic-input" id="inT3_4Type" data-target="outT3_4Type" placeholder="Type 4"></div>
+                                                    <div class="col-6 d-flex justify-content-between">
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Pass" data-group="3_4"><label class="form-check-label" style="font-size: 0.75rem;">P</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="Fail" data-group="3_4"><label class="form-check-label" style="font-size: 0.75rem;">F</label></div>
+                                                        <div class="form-check form-check-inline m-0"><input class="form-check-input chk-pass-fail" type="checkbox" value="N/A" data-group="3_4"><label class="form-check-label" style="font-size: 0.75rem;">N/A</label></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Comments</label>
+                                            <textarea class="form-control dynamic-input" id="inComments" data-target="outComments" rows="2" placeholder="Enter comments here..."></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Signature (SO Rep)</label>
+                                            <canvas id="padSO" class="signature-box"></canvas>
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPad(padSOObj, 'outSignSO')">Clear Sign</button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Name</label>
+                                            <input type="text" class="form-control dynamic-input" id="inNameSO" data-target="outNameSO" placeholder="Enter SO Name">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Position/Role</label>
+                                            <input type="text" class="form-control dynamic-input" id="inRoleSO" data-target="outRoleSO" value="SO Representative">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Date</label>
+                                            <input type="date" class="form-control dynamic-input" id="inDateSO" data-target="outDateSO">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PEGAWAI 3: ENGINEER APPROVAL -->
+                            <div id="officerEngineerDiv" style="display: none;">
+                                <hr>
+                                <div class="mb-3">
+                                    <label class="form-label">Approval Status</label>
+                                    <select class="form-select dynamic-input" id="inApprovalStatus" onchange="updateApprovalStatus(this.value)">
+                                        <option value="">-- Select Status --</option>
+                                        <option value="APPROVED">APPROVED</option>
+                                        <option value="REJECTED">NOT APPROVED</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Remarks</label>
+                                    <textarea class="form-control dynamic-input" id="inRemarks" data-target="outRemarks" rows="2"></textarea>
+                                </div>
+
+                                <div class="card shadow-sm mb-2 border-0">
+                                    <div class="card-body p-3">
+                                        <h6 class="text-primary mb-3" style="font-size: 0.85rem; font-weight: 700;">Engineer Signature (PM/RE/ARE/QAE) (Pegawai 3)</h6>
+                                        <div class="mb-3">
+                                            <canvas id="padEngineer" class="signature-box"></canvas>
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPad(padEngineerObj, 'outSignEngineer')">Clear Sign</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-check mb-3 mt-2">
+                                            <input class="form-check-input dynamic-input" type="checkbox" id="inNeedAE" onchange="renderActionButtons()">
+                                            <label class="form-check-label fw-bold text-primary" for="inNeedAE" style="font-size: 0.85rem;">
+                                                Perlu Initial AE (Assistant Engineer)?
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Name</label>
+                                            <input type="text" class="form-control dynamic-input" id="inNameEngineer" data-target="outNameEngineer" placeholder="Enter Engineer Name">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Position/Role</label>
+                                            <input type="text" class="form-control dynamic-input" id="inRoleEngineer" data-target="outRoleEngineer" value="PM/RE/ARE/QAE">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Date</label>
+                                            <input type="date" class="form-control dynamic-input" id="inDateEng" data-target="outDateEng">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PEGAWAI 4: AE INITIAL -->
+                            <div id="officerAEDiv" style="display: none;">
+                                <div class="card shadow-sm mb-2 border-0 mt-3">
+                                    <div class="card-body p-3">
+                                        <h6 class="text-primary mb-3" style="font-size: 0.85rem; font-weight: 700;">Assistant Engineer (AE) Initial (Pegawai 4)</h6>
+                                        <div class="mb-3" id="aeInitialDiv">
+                                            <label class="form-label text-secondary" style="font-size: 0.8rem;">Sila masukkan Initial AE anda</label>
+                                            <canvas id="padAEInitial" class="signature-box" style="height: 80px;"></canvas>
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearPad(padAEInitialObj, 'outSignAEInitial')">Clear Initial</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RUANGAN BUTANG TINDAKAN DINAMIK -->
+        <div id="actionButtonsContainer" class="bg-white border-top">
+        </div>
+    </div>
+
+    <!-- LEFT PANEL 2: ESIGN FORM (Khas Untuk Kontraktor Terima Chit) -->
+    <div class="form-panel" id="esignPanel" style="display: none;">
+        <div class="form-header bg-primary text-white p-3 d-flex justify-content-between align-items-center border-bottom">
+            <div>
+                <h5 class="mb-0 fw-bold"><i class="bi bi-pen me-2"></i>E-Sign Kontraktor</h5>
+                <small class="text-white-50">Pengesahan Penerimaan e-Chit</small>
+            </div>
+        </div>
+        
+        <div class="form-body bg-light p-4" style="overflow-y: auto; flex-grow: 1;">
+            <!-- BAHAGIAN 1: FORM PENGISIAN -->
+            <div id="esignFormArea">
+                <div class="alert alert-info shadow-sm mb-4" style="font-size: 0.85rem;">
+                    <b>Makluman:</b> Sila semak status kelulusan pada dokumen di paparan kanan. Turunkan tandatangan dan isikan butiran anda di bawah sebagai pengesahan.
+                </div>
+                
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-primary">Tandatangan</label>
+                            <canvas id="padContractorReceived" class="signature-box bg-white"></canvas>
+                            <button type="button" class="btn btn-sm btn-outline-secondary float-end mt-1" onclick="clearPad(padContractorReceivedObj, 'outSignContractorReceived')">Padam</button>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="mb-3 mt-4">
+                            <label class="form-label fw-bold text-dark">Nama Pengesah</label>
+                            <input type="text" class="form-control dynamic-input" id="inNameContractorReceived" data-target="outNameContractorReceived" placeholder="Sila masukkan nama penuh">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark">Position/Role</label>
+                            <input type="text" class="form-control dynamic-input" id="inRoleContractorReceived" data-target="outRoleContractorReceived" placeholder="Cth: Pengurus Projek">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark">Tarikh</label>
+                            <input type="date" class="form-control dynamic-input" id="inDateContractorReceived" data-target="outDateContractorReceived">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mb-5">
+                    <button type="button" class="btn btn-success fw-bold py-2 shadow-sm" onclick="submitContractorEsign()">Submit E-Sign</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="cancelEsign()">Batal</button>
+                </div>
+            </div>
+
+            <!-- BAHAGIAN 2: STATUS BERJAYA & MUAT TURUN -->
+            <div id="esignSuccessArea" style="display: none; text-align: center; padding-top: 3rem;">
+                <i class="bi bi-check-circle-fill text-success mb-3" style="font-size: 5rem;"></i>
+                <h4 class="fw-bold text-dark mb-3">Pengesahan Berjaya!</h4>
+                <p class="text-muted mb-4">Tandatangan anda telah direkodkan ke dalam sistem. Sila muat turun salinan Approval Chit ini sebagai rekod simpanan anda.</p>
+                <div class="d-grid gap-2 mb-5">
+                    <button type="button" class="btn btn-primary fw-bold py-2 shadow-sm" id="btnDownloadContractor" onclick="generatePDF(true)">
+                        <i class="bi bi-download me-2"></i> Muat Turun PDF
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="closeEsignAndGoHome()">Selesai & Tutup Sistem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: LIVE PREVIEW (100% PDF MATCH) -->
+    <div class="preview-panel" id="previewPanel">
+        
+        <div id="pdf-wrapper" class="a4-paper">
+            
+            <!-- HEADER BOX MATCHING EXACT LAYOUT -->
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="border: 1px solid #000; padding: 5px 10px; width: 30%; font-size: 11px; font-weight: bold; text-transform: uppercase;" class="dynamic-text" id="outCompanyName">
+                    </td>
+                    <td rowspan="2" style="border: 1px solid #000; border-bottom: none; padding: 10px; width: 70%; vertical-align: top;">
+                        <table style="width: 100%; font-size: 11px;">
+                            <tr>
+                                <td style="width: 60px; font-weight: normal; padding-bottom: 2px;">Project</td>
+                                <td style="width: 10px; padding-bottom: 2px;">:</td>
+                                <td class="border-bottom-dash dynamic-text" id="outProject" style="padding-bottom: 2px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: normal;">Contract No.</td>
+                                <td>:</td>
+                                <td class="border-bottom-dash dynamic-text" id="outContract"></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; border-top: none; border-bottom: none; padding: 10px; width: 30%; font-weight: bold; font-size: 16px; vertical-align: top;">
+                        JKR SARAWAK
+                    </td>
+                </tr>
+            </table>
+            <!-- BOTTOM ROW: APPROVAL CHIT (70%) & CHIT NO (30%) -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <tr>
+                    <td style="border: 1px solid #000; padding: 10px; width: 70%; text-align: center; vertical-align: middle;">
+                        <div style="font-weight: bold; font-size: 16px; text-decoration: underline; margin-bottom: 5px;">APPROVAL CHIT</div>
+                        <div style="font-weight: bold; font-size: 11px; text-transform: uppercase;">
+                            (<span class="dynamic-text" id="outWorkTypeDisplay" style="text-decoration: underline;">EARTH WORKS</span>)*
+                        </div>
+                    </td>
+                    <td style="border: 1px solid #000; padding: 10px; width: 30%; text-align: right; font-weight: bold; font-size: 12px; vertical-align: top;">
+                        CHIT NO.<span class="dynamic-text" id="outChit" style="text-decoration: underline; margin-left: 2px;">1</span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- PART A -->
+            <table class="pdf-table">
+                <tr>
+                    <td colspan="2" class="section-title">
+                        PART A <span class="section-subtitle" style="margin-left: 15px;">(To be filled by Contractor)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="no-border-right" style="width: 10%;">From</td>
+                    <td class="no-border-left" style="width: 90%;">: PROJECT MANAGER/CONSTRUCTION MANAGER/SITE AGENT (Contractor)</td>
+                </tr>
+                <tr>
+                    <td class="no-border-right">To</td>
+                    <td class="no-border-left">: SUPERINTENDANT OFFICER'S REPRESENTATIVE</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 5px;">
+                        We request for inspection and permission to proceed with the following work;<br>
+                        <div class="dynamic-text" id="outWorkDesc" style="min-height: 15px; margin-top: 2px; white-space: pre-wrap; border-bottom: 1px dashed #ccc;"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 0;">
+                        <table class="inner-layout" style="width: 100%;">
+                            <tr>
+                                <td style="width: 50%; padding: 2px 5px; border-right: 1px solid #000 !important; vertical-align: top;">
+                                    Submitted by:- Signature:<br>
+                                    <div class="sign-image-container" style="height: 40px; margin: 0;">
+                                        <img id="outSignSubmit" class="sign-img" src="" style="max-height: 40px;">
+                                    </div>
+                                    <div style="line-height: 1.2;">
+                                        <span class="dynamic-text" id="outNameSubmit" style="text-transform: uppercase; font-weight: bold;"></span><br>
+                                        <span class="dynamic-text" id="outRoleSubmit"></span><br>
+                                        Date: <span class="dynamic-text" id="outDateSubmit"></span>
+                                    </div>
+                                </td>
+                                <td style="width: 50%; padding: 2px 5px; vertical-align: top;">
+                                    Checked by: Signature<br>
+                                    <div class="sign-image-container" style="display: flex; gap: 10px; align-items: flex-end; height: 65px; margin: 0;">
+                                        <img id="outSignCheck" class="sign-img" src="" style="max-height: 50px; max-width: 130px;">
+                                        <img id="outCompanyStamp" alt="Cop Syarikat" src="" style="height: 65px; width: 100px; object-fit: contain; display: none;">
+                                    </div>
+                                    <div style="line-height: 1.2;">
+                                        <span class="dynamic-text" id="outNameCheck" style="text-transform: uppercase; font-weight: bold;"></span><br>
+                                        <span class="dynamic-text" id="outRoleCheck"></span><br>
+                                        Date: <span class="dynamic-text" id="outDateCheck"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- PART B -->
+            <table class="pdf-table">
+                <tr>
+                    <td colspan="2" class="section-title">
+                        PART B <span class="section-subtitle" style="margin-left: 15px;">(To be filled by Superintendant Officer's Rep)*</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 0;">
+                        <table class="inner-layout" style="width: 100%;">
+                            <tr>
+                                <td style="width: 50%; padding: 2px 5px 0 5px; vertical-align: top;">
+                                    Received by:-<br>
+                                    Signature:<br>
+                                    <div class="sign-image-container" style="height: 35px; margin: 0;">
+                                        <img id="outSignReceived1" class="sign-img" src="" style="max-height: 35px;">
+                                    </div>
+                                    <div style="line-height: 1.2; margin-top: 2px;">
+                                        Name: <span class="dynamic-text" id="outNameReceived1" style="text-transform: uppercase; font-weight: bold; font-size: 10px;"></span><br>
+                                        Position: <span class="dynamic-text" id="outRoleReceived1" style="font-size: 10px;"></span>
+                                    </div>
+                                </td>
+                                <td style="width: 50%; padding: 2px 5px 0 5px; vertical-align: bottom;">
+                                    Date: <span class="dynamic-text" id="outDateReceived1"></span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 5px;">
+                        <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                            <tr>
+                                <td style="width: 33.33%; padding: 0 5px; vertical-align: top; border: none; font-size: 10px;">
+                                    1) Certification/Approval of materials:<br>
+                                    <table style="width: 100%; border-collapse: collapse; text-align: center; margin-top: 3px;">
+                                        <tr>
+                                            <td style="border: 1px solid #000; width: 60%; padding: 2px;">Type</td>
+                                            <td style="border: 1px solid #000; width: 40%; padding: 2px;">Pass/Fail</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT1_1Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT1_1Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT1_2Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT1_2Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT1_3Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT1_3Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT1_4Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT1_4Result"></span></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="width: 33.33%; padding: 0 5px; vertical-align: top; border: none; font-size: 10px;">
+                                    2) Inspection/Measurement of Prior Work:<br>
+                                    <table style="width: 100%; border-collapse: collapse; text-align: center; margin-top: 3px;">
+                                        <tr>
+                                            <td style="border: 1px solid #000; width: 60%; padding: 2px;">Type</td>
+                                            <td style="border: 1px solid #000; width: 40%; padding: 2px;">Pass/Fail</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT2_1Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT2_1Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT2_2Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT2_2Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT2_3Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT2_3Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT2_4Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT2_4Result"></span></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="width: 33.33%; padding: 0 5px; vertical-align: top; border: none; font-size: 10px;">
+                                    3) Testing of Prior Work:<br>
+                                    <table style="width: 100%; border-collapse: collapse; text-align: center; margin-top: 3px;">
+                                        <tr>
+                                            <td style="border: 1px solid #000; width: 60%; padding: 2px;">Type</td>
+                                            <td style="border: 1px solid #000; width: 40%; padding: 2px;">Pass/Fail</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT3_1Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT3_1Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT3_2Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT3_2Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT3_3Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT3_3Result"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #000; height: 16px; word-break: break-word;"><span class="dynamic-text" id="outT3_4Type"></span></td>
+                                            <td style="border: 1px solid #000; font-weight: bold;"><span class="dynamic-text" id="outT3_4Result"></span></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 2px 5px;">
+                        Comments (where relevant) :-<br>
+                        <div class="dynamic-text" id="outComments" style="min-height: 15px; border-bottom: 1px dashed #ccc; margin-bottom: 2px; white-space: pre-wrap;"></div>
+                        <table class="inner-layout" style="width: 100%;">
+                            <tr>
+                                <td style="width: 10%; vertical-align: top;">Signature</td>
+                                <td style="width: 50%; vertical-align: top;">:<br>
+                                    <div class="sign-image-container" style="height: 35px; margin: 0;">
+                                        <img id="outSignSO" class="sign-img" src="" style="max-height: 35px;">
+                                    </div>
+                                    <div style="line-height: 1.2; margin-top: 2px;">
+                                        <span class="dynamic-text" id="outNameSO" style="text-transform: uppercase; font-weight: bold;"></span><br>
+                                        <span class="dynamic-text" id="outRoleSO"></span><br>
+                                        SO Representative
+                                    </div>
+                                </td>
+                                <td style="width: 40%; text-align: right; vertical-align: bottom;">Date: <span class="dynamic-text" id="outDateSO"></span></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- PART C -->
+            <table class="pdf-table">
+                <tr>
+                    <td colspan="2" class="section-title">PART C <br><span class="section-subtitle">(To be filled by Engineer/Quality Assurance Engineer)*</span></td>
+                </tr>
+                <tr>
+                    <td class="no-border-right" style="width: 10%;">From</td>
+                    <td class="no-border-left" style="width: 90%;">: SUPERINTENDANT OFFICER (SO) REPRESENTATIVE*</td>
+                </tr>
+                <tr>
+                    <td class="no-border-right">To</td>
+                    <td class="no-border-left">: PROJECT MANAGER/CONSTRUCTION MANAGER/SITE AGENT (Contractor)</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 5px;">
+                        Your request to proceed with the above mentioned work<br>
+                        <div style="font-weight: bold; margin-left: 50px; line-height: 1.5; margin-top: 5px;">
+                            <div>[ <span id="checkApproved">&nbsp;&nbsp;&nbsp;&nbsp;</span> ] IS APPROVED</div>
+                            <div>[ <span id="checkRejected">&nbsp;&nbsp;&nbsp;&nbsp;</span> ] IS NOT APPROVED</div>
+                        </div>
+                        <br>
+                        Remarks <span class="dynamic-text" id="outRemarks" style="border-bottom: 1px dashed #ccc; padding-bottom: 1px; margin-left: 10px; display: inline-block; width: 85%; min-height: 15px;"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 0;">
+                        <table class="inner-layout" style="width: 100%;">
+                            <tr>
+                                <td style="width: 50%; padding: 2px 5px; border-right: 1px solid #000 !important; vertical-align: top;">
+                                    Received for Contractor:<br>
+                                    Signature <br>
+                                    <div class="sign-image-container" style="height: 35px; margin: 0;">
+                                        <img id="outSignContractorReceived" class="sign-img" src="" style="max-height: 35px;">
+                                    </div>
+                                    <div style="line-height: 1.2; margin-top: 2px; margin-bottom: 2px;">
+                                        <span class="dynamic-text" id="outNameContractorReceived" style="text-transform: uppercase; font-weight: bold;"></span><br>
+                                        <span class="dynamic-text" id="outRoleContractorReceived">Project Manager/Construction Manager/Site Agent</span>
+                                    </div>
+                                    Date: <span class="dynamic-text" id="outDateContractorReceived"></span>
+                                </td>
+                                <td style="width: 50%; padding: 2px 5px; vertical-align: top;">
+                                    <br>
+                                    Signature 
+                                    <div class="sign-image-container" style="height: 35px; margin: 0;"><img id="outSignEngineer" class="sign-img" src="" style="max-height: 35px;"></div>
+                                    
+                                    <div style="display: flex; justify-content: flex-start; align-items: center; gap: 10px; margin-top: 2px; margin-bottom: 2px;">
+                                        <div style="line-height: 1.2;">
+                                            <span class="dynamic-text" id="outNameEngineer" style="text-transform: uppercase; font-weight: bold;"></span><br>
+                                            <span class="dynamic-text" id="outRoleEngineer">PM/RE/ARE/QAE</span>
+                                        </div>
+                                        <div>
+                                            <img id="outSignAEInitial" src="" style="max-height: 60px; max-width: 90px; display: block; margin-left: 10px;">
+                                        </div>
+                                    </div>
+                                    Date: <span class="dynamic-text" id="outDateEng"></span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="disclaimer-text">
+                Neither the endorsement of this Form nor anything written on it is intended to convey final approval for any part of the Works, nor does it relieves the Contractor of his responsibility to comply with the quality requirements of the Works.
+            </div>
+
+            <!-- PAGE 2: DRAWING -->
+            <div id="pdf-page-drawing" class="page-break" style="display: none; padding-top: 20px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h5 style="margin: 0; font-weight: bold;">ATTACHMENT: DRAWING</h5>
+                    <div style="font-size: 12px;">CHIT NO: <span class="dynamic-text chit-copy">1</span></div>
+                </div>
+                <div id="outDrawingContainer" style="width: 100%; min-height: 200mm; display: flex; justify-content: center; align-items: center;">
+                </div>
+            </div>
+
+            <!-- PAGE 3: IMAGES -->
+            <div id="pdf-page-2" class="page-break" style="display: none; padding-top: 20px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h5 style="margin: 0; font-weight: bold;">SITE PHOTOS ATTACHMENT</h5>
+                    <div style="font-size: 12px;">CHIT NO: <span class="dynamic-text chit-copy">1</span></div>
+                </div>
+                <div class="img-grid-container" id="outImagesGrid">
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- Officer Login Modal (DITAMBAH BARU) -->
+<div class="modal fade" id="officerLoginModal" tabindex="-1" aria-labelledby="officerLoginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="officerLoginModalLabel"><i class="bi bi-shield-lock me-2"></i>Log Masuk Pegawai</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="demoInfoBox" class="alert alert-info py-2" style="font-size: 0.85rem;">
+                    <strong>Info:</strong> ID lalai adalah <b>admin</b> dan kata laluan <b>1234</b>
+                </div>
+                <div id="loginError" class="alert alert-danger py-2" style="display: none; font-size: 0.85rem;">
+                    ID Pengguna atau Kata Laluan salah.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">ID Pengguna</label>
+                    <input type="text" id="loginUsername" class="form-control" placeholder="Masukkan ID">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Kata Laluan</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="Masukkan kata laluan">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary fw-bold" onclick="attemptOfficerLogin()">Log Masuk</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Officer Settings Modal (DITAMBAH BARU) -->
+<div class="modal fade" id="officerSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-gear me-2"></i>Tetapan Akaun</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="settingsError" class="alert alert-danger py-2" style="display: none; font-size: 0.85rem;">
+                    Kata laluan semasa tidak tepat.
+                </div>
+                <div id="settingsSuccess" class="alert alert-success py-2" style="display: none; font-size: 0.85rem;">
+                    Maklumat log masuk telah dikemas kini.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">ID Pengguna Baru</label>
+                    <input type="text" id="setNewUserId" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Kata Laluan Baru</label>
+                    <input type="password" id="setNewPassword" class="form-control">
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Pengesahan (Kata Laluan Semasa)</label>
+                    <input type="password" id="setCurrentPassword" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-success fw-bold" onclick="saveOfficerSettings()">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MOVE CHIT MODAL -->
+<div class="modal fade" id="moveChitModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="bi bi-folder-symlink-fill me-2"></i>Pindah e-Chit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-secondary">Pilih Folder Projek Destinasi</label>
+                    <select class="form-select" id="targetProjectSelect">
+                        <!-- Options dipopulasikan melalui JS -->
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer bg-white">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-warning fw-bold px-4" onclick="executeMoveChit()">Pindah Sekarang</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- FUNGSI AUTO-SCALE PDF UNTUK PAPARAN MOBILE ---
+    function scalePDF() {
+        const wrapper = document.getElementById('pdf-wrapper');
+        const panel = document.getElementById('previewPanel');
+        
+        if (!wrapper || !panel) return;
+        
+        if (window.innerWidth <= 992) {
+            const panelWidth = panel.clientWidth - 10; 
+            const a4Width = 794; 
+            const scaleFactor = panelWidth / a4Width;
+            
+            if (scaleFactor < 1) {
+                wrapper.style.transform = `scale(${scaleFactor})`;
+                
+                const originalHeight = wrapper.offsetHeight;
+                const scaledHeight = originalHeight * scaleFactor;
+                const marginDiff = originalHeight - scaledHeight;
+                wrapper.style.marginBottom = `-${marginDiff}px`;
+            } else {
+                wrapper.style.transform = 'none';
+                wrapper.style.marginBottom = '30px';
+            }
+        } else {
+            wrapper.style.transform = 'none';
+            wrapper.style.marginBottom = '30px';
+        }
+    }
+
+    window.addEventListener("resize", () => {
+        resizeCanvas();
+        scalePDF();
+    });
+
+    const dynamicInputs = document.querySelectorAll('.dynamic-input');
+    
+    function updateWorkTypeDisplay() {
+        const selectVal = document.getElementById('inWorkType').value;
+        const otherInput = document.getElementById('inOtherWork').value;
+        const displayElem = document.getElementById('outWorkTypeDisplay');
+        const otherDiv = document.getElementById('otherWorkDiv');
+
+        if (selectVal === 'OTHER WORKS') {
+            otherDiv.style.display = 'block';
+            displayElem.innerText = otherInput ? otherInput.toUpperCase() : 'OTHER WORKS';
+        } else {
+            otherDiv.style.display = 'none';
+            displayElem.innerText = selectVal;
+        }
+    }
+
+    const bindLivePreview = function() {
+        const targetId = this.getAttribute('data-target');
+        if (targetId) {
+            const targetEl = document.getElementById(targetId);
+            if(targetEl) {
+                if (targetEl.tagName === 'INPUT' || targetEl.tagName === 'TEXTAREA') targetEl.value = this.value;
+                else targetEl.innerText = this.value;
+            }
+        }
+        if(this.id === 'inChit') {
+            document.querySelectorAll('.chit-copy').forEach(el => el.innerText = this.value);
+        }
+        if(this.id === 'inWorkType' || this.id === 'inOtherWork') {
+            updateWorkTypeDisplay();
+        }
+    };
+
+    dynamicInputs.forEach(input => {
+        input.addEventListener('input', bindLivePreview);
+        input.addEventListener('change', bindLivePreview); 
+    });
+
+    function updateApprovalStatus(val) {
+        document.getElementById('checkApproved').innerHTML = (val === 'APPROVED') ? '&#10004;' : '&nbsp;&nbsp;&nbsp;&nbsp;';
+        document.getElementById('checkRejected').innerHTML = (val === 'REJECTED') ? '&#10004;' : '&nbsp;&nbsp;&nbsp;&nbsp;';
+        if (typeof renderActionButtons === 'function') renderActionButtons();
+    }
+
+    const passFailCheckboxes = document.querySelectorAll('.chk-pass-fail');
+    passFailCheckboxes.forEach(chk => {
+        chk.addEventListener('change', function() {
+            const group = this.getAttribute('data-group');
+            const val = this.value;
+            if(this.checked) {
+                document.querySelectorAll(`.chk-pass-fail[data-group="${group}"]`).forEach(other => {
+                    if(other !== this) other.checked = false;
+                });
+                document.getElementById(`outT${group}Result`).innerText = val;
+            } else {
+                document.getElementById(`outT${group}Result`).innerText = "";
+            }
+        });
+    });
+
+    let padSubmitObj, padCheckObj, padEngineerObj, padAEInitialObj, padReceived1Obj, padSOObj, padContractorReceivedObj;
+    const signaturePads = [];
+
+    function initPad(canvasId, imgId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null; 
+        const pad = new SignaturePad(canvas, { penColor: "rgb(0, 0, 150)" });
+        pad.addEventListener("endStroke", () => {
+            document.getElementById(imgId).src = pad.toDataURL("image/png");
+        });
+        signaturePads.push({ pad: pad, canvas: canvas });
+        return pad;
+    }
+
+    function initializePads() {
+        if (typeof SignaturePad !== 'undefined') {
+            padSubmitObj = initPad('padSubmit', 'outSignSubmit');
+            padCheckObj = initPad('padCheck', 'outSignCheck');
+            padEngineerObj = initPad('padEngineer', 'outSignEngineer');
+            padAEInitialObj = initPad('padAEInitial', 'outSignAEInitial'); 
+            padReceived1Obj = initPad('padReceived1', 'outSignReceived1');
+            padSOObj = initPad('padSO', 'outSignSO');
+            padContractorReceivedObj = initPad('padContractorReceived', 'outSignContractorReceived');
+            
+            Object.assign(window, { padSubmitObj, padCheckObj, padEngineerObj, padAEInitialObj, padReceived1Obj, padSOObj, padContractorReceivedObj });
+        } else {
+            setTimeout(initializePads, 100);
+        }
+    }
+    
+    document.addEventListener("DOMContentLoaded", initializePads);
+
+    function resizeCanvas() {
+        const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+        signaturePads.forEach(item => {
+            const canvas = item.canvas;
+            if (canvas && canvas.offsetWidth > 0) {
+                if (canvas.width !== canvas.offsetWidth * ratio) {
+                    const data = item.pad.toData();
+                    canvas.width = canvas.offsetWidth * ratio;
+                    canvas.height = canvas.offsetHeight * ratio;
+                    canvas.getContext("2d").scale(ratio, ratio);
+                    item.pad.clear();
+                    item.pad.fromData(data);
+                }
+            }
+        });
+    }
+
+    function clearPad(padObj, imgId) {
+        if (!padObj) return; 
+        padObj.clear();
+        document.getElementById(imgId).removeAttribute('src');
+    }
+
+    function toggleSectionEdit(sectionId, isEditable) {
+        const section = document.getElementById(sectionId);
+        if (!section) return;
+        const elements = section.querySelectorAll('input, textarea, select, button:not(.accordion-button):not(.btn-close)');
+        elements.forEach(el => {
+            el.disabled = !isEditable;
+        });
+        const canvases = section.querySelectorAll('canvas');
+        canvases.forEach(c => {
+            c.style.pointerEvents = isEditable ? 'auto' : 'none';
+            c.style.opacity = isEditable ? '1' : '0.6';
+        });
+    }
+
+    const inDrawingInput = document.getElementById('inDrawing');
+    if(inDrawingInput) {
+        inDrawingInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const pageDrawing = document.getElementById('pdf-page-drawing');
+            const container = document.getElementById('outDrawingContainer');
+            
+            if (file && file.type === 'application/pdf') {
+                pageDrawing.style.display = 'block';
+                container.innerHTML = '<div style="padding: 50px; font-weight: bold;">Merender Drawing... Sila tunggu.</div>'; 
+                
+                const fileReader = new FileReader();
+                fileReader.onload = function() {
+                    const typedarray = new Uint8Array(this.result);
+                    pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                        return pdf.getPage(1);
+                    }).then(page => {
+                        const viewport = page.getViewport({ scale: 1.0 }); 
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        const renderContext = { canvasContext: context, viewport: viewport };
+                        
+                        page.render(renderContext).promise.then(() => {
+                            const isLandscape = viewport.width > viewport.height;
+                            let finalCanvas = canvas;
+                            
+                            if (isLandscape) {
+                                finalCanvas = document.createElement('canvas');
+                                const finalCtx = finalCanvas.getContext('2d');
+                                finalCanvas.width = viewport.height;
+                                finalCanvas.height = viewport.width;
+                                
+                                finalCtx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
+                                finalCtx.rotate(90 * Math.PI / 180);
+                                finalCtx.drawImage(canvas, -viewport.width / 2, -viewport.height / 2);
+                            }
+
+                            const img = document.createElement('img');
+                            img.src = finalCanvas.toDataURL('image/jpeg', 0.4); 
+                            img.style.width = '100%';
+                            img.style.maxHeight = '250mm'; 
+                            img.style.objectFit = 'contain';
+                            img.style.border = '1px solid #ccc';
+                            container.innerHTML = '';
+                            container.appendChild(img);
+                            scalePDF(); 
+                        });
+                    }).catch(err => {
+                        container.innerHTML = '<div class="text-danger">Ralat membaca PDF Drawing. Sila pastikan format sah.</div>';
+                    });
+                };
+                fileReader.readAsArrayBuffer(file);
+            } else {
+                pageDrawing.style.display = 'none';
+                container.innerHTML = '';
+            }
+        });
+    }
+
+    const inCompanyStampInput = document.getElementById('inCompanyStamp');
+    if(inCompanyStampInput) {
+        inCompanyStampInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const stampImg = document.getElementById('outCompanyStamp');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 300; 
+                        let scaleSize = 1;
+                        if (img.width > MAX_WIDTH) {
+                            scaleSize = MAX_WIDTH / img.width;
+                        }
+                        canvas.width = img.width * scaleSize;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        stampImg.src = canvas.toDataURL('image/png', 0.6);
+                        stampImg.style.setProperty('display', 'block', 'important');
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                stampImg.style.display = 'none';
+                stampImg.removeAttribute('src');
+            }
+        });
+    }
+
+    const inImagesInput = document.getElementById('inImages');
+    if(inImagesInput) {
+        inImagesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files).slice(0, 4); 
+            const grid = document.getElementById('outImagesGrid');
+            const page2 = document.getElementById('pdf-page-2');
+            grid.innerHTML = ''; 
+            if(files.length > 0) {
+                page2.style.display = 'block';
+                let processedCount = 0;
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 500; 
+                            let scaleSize = 1;
+                            if (img.width > MAX_WIDTH) {
+                                scaleSize = MAX_WIDTH / img.width;
+                            }
+                            canvas.width = img.width * scaleSize;
+                            canvas.height = img.height * scaleSize;
+                            
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.4); 
+                            
+                            const outImg = document.createElement('img');
+                            outImg.src = dataUrl;
+                            grid.appendChild(outImg);
+                            scalePDF(); 
+                            
+                            processedCount++;
+                        }
+                        img.src = event.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                page2.style.display = 'none';
+            }
+        });
+    }
+
+    function generatePDF(isContractor = false) {
+        const chitNo = document.getElementById('inChit').value || 'Draft';
+        const originalElement = document.getElementById('pdf-wrapper');
+        
+        const btn = (isContractor === true) ? document.getElementById('btnDownloadContractor') : document.getElementById('btnGeneratePDF');
+        let originalText = '';
+        
+        if (btn) {
+            originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Generating...';
+            btn.disabled = true;
+        }
+
+        window.scrollTo(0, 0);
+
+        const printContainer = document.createElement('div');
+        printContainer.style.position = 'absolute';
+        printContainer.style.left = '-9999px';
+        printContainer.style.top = '0';
+        printContainer.style.width = '210mm'; 
+        printContainer.style.backgroundColor = 'white';
+
+        const clonedElement = originalElement.cloneNode(true);
+        clonedElement.style.transform = 'none';
+        clonedElement.style.boxShadow = 'none';
+        clonedElement.style.margin = '0';
+
+        printContainer.appendChild(clonedElement);
+        document.body.appendChild(printContainer);
+
+        const opt = {
+            margin:       0,
+            filename:     `Approval_Chit_${chitNo}.pdf`,
+            image:        { type: 'jpeg', quality: 0.95 },
+            html2canvas:  { scale: 1.5, useCORS: true, logging: false }, 
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        setTimeout(() => {
+            html2pdf().set(opt).from(clonedElement).save()
+            .then(() => {
+                document.body.removeChild(printContainer);
+                
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                alert(isContractor ? `Salinan PDF anda telah berjaya dimuat turun!` : `Selesai! Approval Chit [${chitNo}] telah berjaya dimuat turun sebagai PDF.`);
+            })
+            .catch(err => {
+                console.error("PDF Generation Error:", err);
+                if(document.body.contains(printContainer)) document.body.removeChild(printContainer);
+                
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                alert("Ralat berlaku semasa menjana PDF. Memori pelayar mungkin tidak mencukupi atau sambungan internet lemah.");
+            });
+        }, 300);
+    }
+
+    function getOfficerCreds() {
+        const creds = localStorage.getItem('jkr_officer_creds');
+        if (creds) return JSON.parse(creds);
+        return { id: 'admin', pass: '1234' }; 
+    }
+
+    function showOfficerLogin() {
+        const userEl = document.getElementById('loginUsername');
+        const passEl = document.getElementById('loginPassword');
+        const errEl = document.getElementById('loginError');
+        
+        if (userEl) userEl.value = '';
+        if (passEl) passEl.value = '';
+        if (errEl) errEl.style.display = 'none';
+        
+        const creds = getOfficerCreds();
+        const alertBox = document.getElementById('demoInfoBox');
+        if (alertBox) {
+            if (creds.id === 'admin' && creds.pass === '1234') {
+                alertBox.style.display = 'block'; 
+            } else {
+                alertBox.style.display = 'none';
+            }
+        }
+        
+        const modalEl = document.getElementById('officerLoginModal');
+        if (!modalEl) {
+            alert("Ralat UI: Kotak Log Masuk (Modal) tiada dalam kod HTML. Sila pastikan anda tidak terpadam kod HTML.");
+            return;
+        }
+        
+        let loginModal = bootstrap.Modal.getInstance(modalEl);
+        if (!loginModal) {
+            loginModal = new bootstrap.Modal(modalEl);
+        }
+        loginModal.show();
+    }
+
+    function attemptOfficerLogin() {
+        const user = document.getElementById('loginUsername').value;
+        const pass = document.getElementById('loginPassword').value;
+        const creds = getOfficerCreds();
+        
+        if (user === creds.id && pass === creds.pass) {
+            const modalEl = document.getElementById('officerLoginModal');
+            const loginModal = bootstrap.Modal.getInstance(modalEl);
+            if(loginModal) loginModal.hide();
+            
+            selectRole('officer');
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+        }
+    }
+
+    function showOfficerSettings() {
+        const creds = getOfficerCreds();
+        document.getElementById('setNewUserId').value = creds.id;
+        document.getElementById('setCurrentPassword').value = '';
+        document.getElementById('setNewPassword').value = '';
+        document.getElementById('settingsError').style.display = 'none';
+        document.getElementById('settingsSuccess').style.display = 'none';
+        
+        const modalEl = document.getElementById('officerSettingsModal');
+        let settingsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        settingsModal.show();
+    }
+
+    function saveOfficerSettings() {
+        const creds = getOfficerCreds();
+        const currentPass = document.getElementById('setCurrentPassword').value;
+        const newId = document.getElementById('setNewUserId').value.trim();
+        const newPass = document.getElementById('setNewPassword').value;
+
+        if (currentPass !== creds.pass) {
+            document.getElementById('settingsError').style.display = 'block';
+            document.getElementById('settingsSuccess').style.display = 'none';
+            return;
+        }
+
+        if (newId) creds.id = newId;
+        if (newPass) creds.pass = newPass;
+
+        localStorage.setItem('jkr_officer_creds', JSON.stringify(creds));
+        
+        document.getElementById('settingsError').style.display = 'none';
+        document.getElementById('settingsSuccess').style.display = 'block';
+        
+        setTimeout(() => {
+            const modalEl = document.getElementById('officerSettingsModal');
+            const settingsModal = bootstrap.Modal.getInstance(modalEl);
+            if(settingsModal) settingsModal.hide();
+        }, 1500);
+    }
+
+    let currentRole = '';
+    let activeProject = null;
+    let activeChit = null;
+    let projectsDB = [];
+    const defaultDB = []; 
+    
+    // PEMBOLEH UBAH UNTUK PINDAH FOLDER
+    let moveSourceProjectId = null;
+    let moveChitNo = null;
+
+    function clearForm() {
+        const inputs = document.querySelectorAll('.dynamic-input');
+        inputs.forEach(input => {
+            if(input.tagName === 'SELECT') input.selectedIndex = 0;
+            else input.value = '';
+            
+            const targetId = input.getAttribute('data-target');
+            if (targetId) {
+                const targetEl = document.getElementById(targetId);
+                if(targetEl) targetEl.innerText = '';
+            }
+        });
+        
+        document.querySelectorAll('.chk-pass-fail').forEach(chk => chk.checked = false);
+        for(let i=1; i<=3; i++){
+            for(let j=1; j<=4; j++){
+                let el = document.getElementById(`outT${i}_${j}Result`);
+                if(el) el.innerText = "";
+            }
+        }
+
+        clearPad(padSubmitObj, 'outSignSubmit');
+        clearPad(padCheckObj, 'outSignCheck');
+        clearPad(padReceived1Obj, 'outSignReceived1');
+        clearPad(padSOObj, 'outSignSO');
+        clearPad(padEngineerObj, 'outSignEngineer');
+        clearPad(padAEInitialObj, 'outSignAEInitial'); 
+        clearPad(padContractorReceivedObj, 'outSignContractorReceived');
+
+        const stampImg = document.getElementById('outCompanyStamp');
+        if (stampImg) { stampImg.style.display = 'none'; stampImg.removeAttribute('src'); }
+        if (document.getElementById('inCompanyStamp')) document.getElementById('inCompanyStamp').value = '';
+        
+        if (document.getElementById('inDrawing')) document.getElementById('inDrawing').value = '';
+        document.getElementById('pdf-page-drawing').style.display = 'none';
+        document.getElementById('outDrawingContainer').innerHTML = '';
+
+        if (document.getElementById('inImages')) document.getElementById('inImages').value = '';
+        document.getElementById('pdf-page-2').style.display = 'none';
+        document.getElementById('outImagesGrid').innerHTML = '';
+
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0,10);
+        ['inDateSubmit', 'inDateCheck', 'inDateEng', 'inDateReceived1', 'inDateSO', 'inDateContractorReceived'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) { el.value = dateStr; el.dispatchEvent(new Event('input')); }
+        });
+    }
+
+    function syncFormToChit(chit) {
+        if(!chit) return;
+        
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? (el.value || "") : "";
+        };
+
+        const getImgSrc = (id) => {
+            const img = document.getElementById(id);
+            return (img && img.hasAttribute('src') && img.src.length > 20) ? img.src : "";
+        };
+
+        chit.companyName = getVal('inCompanyName');
+        chit.type = getVal('inWorkType');
+        chit.otherWork = getVal('inOtherWork');
+
+        chit.workDesc = getVal('inWorkDesc');
+        chit.nameSubmit = getVal('inNameSubmit');
+        chit.roleSubmit = getVal('inRoleSubmit');
+        chit.dateSubmit = getVal('inDateSubmit');
+        chit.signSubmit = getImgSrc('outSignSubmit');
+
+        chit.nameCheck = getVal('inNameCheck');
+        chit.roleCheck = getVal('inRoleCheck');
+        chit.dateCheck = getVal('inDateCheck');
+        chit.signCheck = getImgSrc('outSignCheck');
+        
+        chit.stampCompany = getImgSrc('outCompanyStamp');
+
+        chit.nameReceived1 = getVal('inNameReceived1');
+        chit.roleReceived1 = getVal('inRoleReceived1');
+        chit.dateReceived1 = getVal('inDateReceived1');
+        chit.signReceived1 = getImgSrc('outSignReceived1');
+
+        let checkboxesData = {};
+        document.querySelectorAll('.chk-pass-fail').forEach(chk => {
+            if (chk.checked) checkboxesData[chk.getAttribute('data-group')] = chk.value;
+        });
+        chit.checkboxes = checkboxesData;
+
+        let typesData = {};
+        for(let i=1; i<=3; i++){
+            for(let j=1; j<=4; j++){
+                let el = document.querySelector(`[data-target="outT${i}_${j}Type"]`);
+                if(el) typesData[`${i}_${j}`] = el.value || "";
+            }
+        }
+        chit.types = typesData;
+
+        chit.comments = getVal('inComments');
+        chit.nameSO = getVal('inNameSO');
+        chit.roleSO = getVal('inRoleSO');
+        chit.dateSO = getVal('inDateSO');
+        chit.signSO = getImgSrc('outSignSO');
+
+        chit.approvalStatus = getVal('inApprovalStatus');
+        chit.remarks = getVal('inRemarks');
+        
+        chit.needAE = document.getElementById('inNeedAE') ? document.getElementById('inNeedAE').checked : false;
+
+        chit.nameEngineer = getVal('inNameEngineer');
+        chit.roleEngineer = getVal('inRoleEngineer');
+        chit.dateEng = getVal('inDateEng');
+        chit.signEngineer = getImgSrc('outSignEngineer');
+        chit.signAEInitial = getImgSrc('outSignAEInitial'); 
+
+        chit.nameContractorReceived = getVal('inNameContractorReceived');
+        chit.roleContractorReceived = getVal('inRoleContractorReceived');
+        chit.dateContractorReceived = getVal('inDateContractorReceived');
+        chit.signContractorReceived = getImgSrc('outSignContractorReceived');
+        
+        const drawingImg = document.querySelector('#outDrawingContainer img');
+        chit.drawingImage = drawingImg ? drawingImg.src : "";
+
+        const photoImgs = document.querySelectorAll('#outImagesGrid img');
+        chit.sitePhotos = Array.from(photoImgs).map(img => img.src);
+    }
+
+    function syncChitToForm(chit) {
+        if(!chit) return;
+        
+        const setPreview = (inId, outId, val) => {
+            const safeVal = val || "";
+            const inEl = document.getElementById(inId);
+            const outEl = document.getElementById(outId);
+            if (inEl) inEl.value = safeVal;
+            if (outEl) {
+                if (outEl.tagName === 'INPUT' || outEl.tagName === 'TEXTAREA') outEl.value = safeVal;
+                else outEl.innerText = safeVal;
+            }
+        };
+
+        setPreview('inCompanyName', 'outCompanyName', chit.companyName);
+        setPreview('inWorkDesc', 'outWorkDesc', chit.workDesc);
+        setPreview('inNameSubmit', 'outNameSubmit', chit.nameSubmit);
+        setPreview('inRoleSubmit', 'outRoleSubmit', chit.roleSubmit);
+        setPreview('inDateSubmit', 'outDateSubmit', chit.dateSubmit);
+        
+        setPreview('inNameCheck', 'outNameCheck', chit.nameCheck);
+        setPreview('inRoleCheck', 'outRoleCheck', chit.roleCheck);
+        setPreview('inDateCheck', 'outDateCheck', chit.dateCheck);
+
+        setPreview('inNameReceived1', 'outNameReceived1', chit.nameReceived1);
+        setPreview('inRoleReceived1', 'outRoleReceived1', chit.roleReceived1);
+        setPreview('inDateReceived1', 'outDateReceived1', chit.dateReceived1);
+        
+        setPreview('inComments', 'outComments', chit.comments);
+        setPreview('inNameSO', 'outNameSO', chit.nameSO);
+        setPreview('inRoleSO', 'outRoleSO', chit.roleSO);
+        setPreview('inDateSO', 'outDateSO', chit.dateSO);
+
+        setPreview('inRemarks', 'outRemarks', chit.remarks);
+        setPreview('inNameEngineer', 'outNameEngineer', chit.nameEngineer);
+        setPreview('inRoleEngineer', 'outRoleEngineer', chit.roleEngineer);
+        setPreview('inDateEng', 'outDateEng', chit.dateEng);
+
+        setPreview('inNameContractorReceived', 'outNameContractorReceived', chit.nameContractorReceived);
+        setPreview('inRoleContractorReceived', 'outRoleContractorReceived', chit.roleContractorReceived);
+        setPreview('inDateContractorReceived', 'outDateContractorReceived', chit.dateContractorReceived);
+
+        const approvalVal = chit.approvalStatus || '';
+        const inApprovalEl = document.getElementById('inApprovalStatus');
+        if (inApprovalEl) inApprovalEl.value = approvalVal;
+        updateApprovalStatus(approvalVal);
+
+        const inNeedAEEl = document.getElementById('inNeedAE');
+        if (inNeedAEEl) inNeedAEEl.checked = chit.needAE || false;
+
+        document.querySelectorAll('.chk-pass-fail').forEach(chk => { chk.checked = false; });
+        for(let i=1; i<=3; i++){
+            for(let j=1; j<=4; j++){
+                let el = document.getElementById(`outT${i}_${j}Result`);
+                if(el) el.innerText = "";
+            }
+        }
+        if (chit.checkboxes) {
+            for (const [group, value] of Object.entries(chit.checkboxes)) {
+                const chk = document.querySelector(`.chk-pass-fail[data-group="${group}"][value="${value}"]`);
+                if (chk) {
+                    chk.checked = true;
+                    const outEl = document.getElementById(`outT${group}Result`);
+                    if(outEl) outEl.innerText = value;
+                }
+            }
+        }
+
+        if (chit.types) {
+            for (const [group, value] of Object.entries(chit.types)) {
+                let inEl = document.querySelector(`[data-target="outT${group}Type"]`);
+                if(inEl) inEl.value = value || "";
+                let outEl = document.getElementById(`outT${group}Type`);
+                if (outEl) outEl.innerText = value || "";
+            }
+        }
+
+        const restoreSign = (padObj, imgId, dataUrl) => {
+            if (dataUrl && dataUrl !== "") {
+                if (padObj) { try { padObj.fromDataURL(dataUrl); } catch(e) {} }
+                const img = document.getElementById(imgId);
+                if (img) {
+                    img.src = dataUrl;
+                    img.style.setProperty('display', 'block', 'important'); 
+                }
+            } else {
+                if (padObj) padObj.clear();
+                const img = document.getElementById(imgId);
+                if (img) img.removeAttribute('src');
+            }
+        };
+
+        restoreSign(padSubmitObj, 'outSignSubmit', chit.signSubmit);
+        restoreSign(padCheckObj, 'outSignCheck', chit.signCheck);
+        restoreSign(null, 'outCompanyStamp', chit.stampCompany); 
+        restoreSign(padReceived1Obj, 'outSignReceived1', chit.signReceived1);
+        restoreSign(padSOObj, 'outSignSO', chit.signSO);
+        restoreSign(padEngineerObj, 'outSignEngineer', chit.signEngineer);
+        restoreSign(padAEInitialObj, 'outSignAEInitial', chit.signAEInitial); 
+        restoreSign(padContractorReceivedObj, 'outSignContractorReceived', chit.signContractorReceived);
+        
+        const pageDrawing = document.getElementById('pdf-page-drawing');
+        const drawingContainer = document.getElementById('outDrawingContainer');
+        if (chit.drawingImage && chit.drawingImage !== "") {
+            pageDrawing.style.display = 'block';
+            drawingContainer.innerHTML = `<img src="${chit.drawingImage}" style="width: 100%; max-height: 250mm; object-fit: contain; border: 1px solid #ccc;">`;
+        } else {
+            pageDrawing.style.display = 'none';
+            drawingContainer.innerHTML = '';
+        }
+
+        const page2 = document.getElementById('pdf-page-2');
+        const grid = document.getElementById('outImagesGrid');
+        if (chit.sitePhotos && chit.sitePhotos.length > 0) {
+            page2.style.display = 'block';
+            grid.innerHTML = '';
+            chit.sitePhotos.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                grid.appendChild(img);
+            });
+        } else {
+            page2.style.display = 'none';
+            grid.innerHTML = '';
+        }
+    }
+
+    function renderActionButtons() {
+        const container = document.getElementById('actionButtonsContainer');
+        if (currentRole === 'contractor') {
+            if (activeChit && activeChit.status === 'Awaiting Checker') {
+                container.innerHTML = `
+                    <div class="alert alert-info py-2 mb-2 text-center" style="font-size: 0.8rem;">Permohonan ini sedang menunggu semakan (Checked By).</div>
+                    <button class="btn btn-outline-primary w-100 py-2 fw-bold mb-2" onclick="copyCheckLink(this)">
+                        <i class="bi bi-link-45deg me-2"></i> Salin Semula Pautan Penyemak
+                    </button>
+                    <button class="btn btn-primary w-100 py-2 fw-bold shadow-sm" onclick="generateCheckerLink()">
+                        <i class="bi bi-save me-2"></i> Kemas Kini Maklumat & Simpan
+                    </button>`;
+            } else {
+                container.innerHTML = `
+                    <button class="btn btn-primary w-100 py-2 fw-bold shadow-sm" onclick="generateCheckerLink()">
+                        <i class="bi bi-link-45deg me-2"></i> Simpan & Jana Pautan Semakan (Checked By)
+                    </button>`;
+            }
+        } else if (currentRole === 'checker') {
+            container.innerHTML = `
+                <div class="alert alert-info py-2 mb-2 text-center" style="font-size: 0.8rem;">Sila isi maklumat <b>'Checked By'</b>. Maklumat lain telah dilengkapkan oleh pemohon.</div>
+                <button class="btn btn-success w-100 py-2 fw-bold shadow-sm" onclick="submitToOfficer()">
+                    <i class="bi bi-send-fill me-2"></i> Submit Permohonan Kepada Pegawai
+                </button>`;
+        } else if (currentRole === 'officer') {
+            if (!activeChit) return;
+
+            if (activeChit.status === 'Pending') {
+                container.innerHTML = `
+                <div class="alert alert-info py-2 mb-2 text-center" style="font-size: 0.8rem;"><b>Tindakan Pegawai 1:</b> Sila lengkapkan bahagian <b>Received By</b>.</div>
+                <button class="btn btn-warning w-100 py-2 fw-bold shadow-sm mb-2" onclick="saveOfficerDraft('Awaiting SO')">
+                    <i class="bi bi-save me-2"></i> Simpan & Pass to SO Representative
+                </button>`;
+            } else if (activeChit.status === 'Awaiting SO') {
+                container.innerHTML = `
+                <div class="alert alert-info py-2 mb-2 text-center" style="font-size: 0.8rem;"><b>Tindakan Pegawai 2:</b> Sila isi <b>Inspection Details, Comments</b> dan tandatangan <b>SO Rep</b>.</div>
+                <button class="btn btn-warning w-100 py-2 fw-bold shadow-sm mb-2" onclick="saveOfficerDraft('Awaiting Engineer')">
+                    <i class="bi bi-save me-2"></i> Simpan & Pass to Engineer
+                </button>`;
+            } else if (activeChit.status === 'Awaiting Engineer') {
+                const approvalStatus = document.getElementById('inApprovalStatus').value;
+                const isStatusSelected = approvalStatus !== "";
+                const needAE = document.getElementById('inNeedAE') ? document.getElementById('inNeedAE').checked : false;
+                
+                if (needAE) {
+                    container.innerHTML = `
+                    <div class="alert alert-info py-2 mb-2 text-center" style="font-size: 0.8rem;"><b>Tindakan Pegawai 3 (Jurutera):</b> Dokumen akan dihantar kepada AE untuk initial.</div>
+                    <button class="btn btn-warning w-100 py-2 fw-bold shadow-sm mb-2" onclick="saveOfficerDraft('Awaiting AE')" ${isStatusSelected ? '' : 'disabled'}>
+                        <i class="bi bi-person-plus me-2"></i> Simpan Draf & Minta Initial AE
+                    </button>
+                    ${!isStatusSelected ? '<small class="text-danger d-block mt-2 text-center" style="font-size: 0.75rem;">Sila pilih Approval Status untuk mengaktifkan butang ini.</small>' : ''}`;
+                } else {
+                    container.innerHTML = `
+                    <div class="alert alert-info py-2 mb-2 text-center" style="font-size: 0.8rem;"><b>Tindakan Pegawai 3 (Jurutera):</b> Dokumen akan terus dihantar kepada Kontraktor.</div>
+                    <button class="btn btn-success w-100 py-2 fw-bold shadow-sm" onclick="requestContractorSign()" ${isStatusSelected ? '' : 'disabled'}>
+                        <i class="bi bi-whatsapp me-2"></i> Submit to Kontraktor (Terus)
+                    </button>
+                    ${!isStatusSelected ? '<small class="text-danger d-block mt-2 text-center" style="font-size: 0.75rem;">Sila pilih Approval Status untuk mengaktifkan butang ini.</small>' : ''}`;
+                }
+            } else if (activeChit.status === 'Awaiting AE') {
+                container.innerHTML = `
+                <div class="alert alert-info py-2 mb-2 text-center" style="font-size: 0.8rem;"><b>Tindakan Penolong Jurutera (AE):</b> Sila masukkan <b>Initial AE</b> anda dan teruskan.</div>
+                <button class="btn btn-success w-100 py-2 fw-bold shadow-sm" onclick="requestContractorSign()">
+                    <i class="bi bi-whatsapp me-2"></i> Simpan Initial AE & Submit to Kontraktor
+                </button>`;
+            } else if (activeChit.status === 'Awaiting E-Sign') {
+                container.innerHTML = `
+                <div class="alert alert-warning py-2 mb-2 text-center" style="font-size: 0.8rem;">Menunggu Pengesahan Kontraktor...</div>
+                <button class="btn btn-outline-primary w-100 py-2 fw-bold mb-2" onclick="copySignLink(this)">
+                    <i class="bi bi-link-45deg me-2"></i> Salin Semula Pautan E-Sign
+                </button>
+                <button class="btn btn-secondary w-100 py-2 fw-bold" id="btnGeneratePDF" onclick="generatePDF()">
+                    <i class="bi bi-file-earmark-pdf-fill me-2"></i> Review & Download PDF
+                </button>`;
+            } else if (activeChit.status === 'Completed' || activeChit.status === 'Approved' || activeChit.status === 'Received by Contractor') {
+                container.innerHTML = `
+                <div class="alert alert-success py-2 mb-2 text-center fw-bold" style="font-size: 0.85rem;">
+                    <i class="bi bi-check-circle-fill me-1"></i> Approval Chit Received by Contractor
+                </div>
+                <button class="btn btn-primary w-100 py-2 fw-bold shadow-sm" id="btnGeneratePDF" onclick="generatePDF()">
+                    <i class="bi bi-file-earmark-pdf-fill me-2"></i> Review & Download PDF
+                </button>`;
+            }
+        }
+    }
+
+    async function saveOfficerDraft(nextStatus) {
+        if(activeChit) {
+            syncFormToChit(activeChit);
+            if (nextStatus) {
+                activeChit.status = nextStatus;
+            }
+            
+            document.body.style.cursor = 'wait';
+            const btnContainer = document.getElementById('actionButtonsContainer');
+            if(btnContainer) btnContainer.style.opacity = '0.5';
+            
+            const success = await saveDB();
+            
+            document.body.style.cursor = 'default';
+            if(btnContainer) btnContainer.style.opacity = '1';
+
+            if (!success) return;
+
+            alert(`Data berjaya disimpan sebagai Draf.\nStatus terkini: ${nextStatus}\n\nSila maklumkan kepada Pegawai seterusnya untuk menyemak.`);
+            goHome();
+        }
+    }
+
+    async function generateCheckerLink() {
+        if (!confirm("SILA SEMAK DAHULU:\n\nPastikan semua maklumat dan gambar pada dokumen di paparan kanan adalah TEPAT sebelum anda menjana pautan untuk penyemak (Checked By).\n\nTeruskan?")) {
+            return;
+        }
+
+        const chitNo = document.getElementById('inChit').value || 'Draft';
+        let workType = document.getElementById('inWorkType').value;
+        if (workType === 'OTHER WORKS') workType = document.getElementById('inOtherWork').value || 'OTHER WORKS';
+        
+        const submitter = document.getElementById('inNameSubmit').value || 'Wakil Kontraktor';
+        const dateSubmit = document.getElementById('inDateSubmit').value;
+        const projName = document.getElementById('inProject').value || 'Projek Umum';
+        const contractNo = document.getElementById('inContract').value || 'Tiada No. Kontrak';
+
+        if (!document.getElementById('inNameSubmit').value) {
+            alert("Sila isi maklumat 'Name' di bahagian Submitted By terlebih dahulu.");
+            return;
+        }
+
+        let targetProject = projectsDB.find(p => p.contract === contractNo || p.name === projName);
+        
+        if (!targetProject) {
+            let safeId = projName.replace(/[^a-zA-Z0-9]/g, '');
+            if(!safeId) safeId = 'P' + Date.now();
+            
+            targetProject = { 
+                id: safeId,
+                name: projName, 
+                contract: contractNo, 
+                chits: [] 
+            };
+            projectsDB.push(targetProject);
+        }
+
+        let newChit = {
+            chitNo: chitNo, 
+            type: workType.toUpperCase(), 
+            otherWork: document.getElementById('inOtherWork').value || "", 
+            status: 'Awaiting Checker', 
+            submitter: submitter.toUpperCase(), 
+            date: dateSubmit
+        };
+        
+        syncFormToChit(newChit);
+        
+        const existingChitIndex = targetProject.chits.findIndex(c => c.chitNo === chitNo);
+        if (existingChitIndex !== -1) {
+            targetProject.chits[existingChitIndex] = newChit;
+        } else {
+            targetProject.chits.push(newChit);
+        }
+
+        activeProject = targetProject;
+        activeChit = newChit;
+
+        // TUNJUK STATUS LOADING (SISTEM MENUNGGU UPLOAD SELESAI)
+        document.body.style.cursor = 'wait';
+        const btnContainer = document.getElementById('actionButtonsContainer');
+        if(btnContainer) btnContainer.style.opacity = '0.5';
+
+        const success = await saveDB(); 
+        
+        document.body.style.cursor = 'default';
+        if(btnContainer) btnContainer.style.opacity = '1';
+
+        if (!success) return; // Hentikan fungsi jika gagal save (Cth: gambar besar)
+        
+        renderActionButtons();
+        copyCheckLink();
+    }
+
+    function copyCheckLink(btnElement = null) {
+        if (!activeProject || !activeChit) return;
+
+        const baseUrl = window.location.origin + window.location.pathname;
+        const signLink = `${baseUrl}?mode=check&project=${encodeURIComponent(activeProject.id)}&chit=${encodeURIComponent(activeChit.chitNo)}`;
+        
+        const tempInput = document.createElement("textarea");
+        tempInput.value = signLink;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        tempInput.setSelectionRange(0, 99999); 
+
+        let isCopied = false;
+        try { isCopied = document.execCommand("copy"); } 
+        catch (err) { isCopied = false; }
+        document.body.removeChild(tempInput);
+
+        if (btnElement) {
+            if (isCopied) {
+                alert("BERJAYA!\n\nPautan telah disalin ke 'Clipboard'.\n\nLink: " + signLink);
+            } else {
+                prompt("Sila salin pautan di bawah secara manual:", signLink);
+            }
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Pautan Telah Disalin!';
+            btnElement.classList.replace('btn-outline-primary', 'btn-success');
+            setTimeout(() => {
+                btnElement.innerHTML = originalText;
+                btnElement.classList.replace('btn-success', 'btn-outline-primary');
+            }, 3000);
+        } else {
+            // Jika dipanggil buat pertama kali (Tidak lagi paksa balik ke Home)
+            prompt("PAUTAN BERJAYA DIJANA!\n\nSila SALIN (COPY) pautan di bawah untuk dihantar kepada Penyemak (Checked By):", signLink);
+        }
+    }
+
+    async function submitToOfficer() {
+        if (!document.getElementById('inNameCheck').value) {
+            alert("Sila isi maklumat Nama di ruangan 'Checked By'.");
+            return;
+        }
+        
+        if (!confirm("Adakah anda pasti ingin menghantar dokumen ini kepada Pegawai JKR? Sila pastikan tandatangan pengesahan anda telah diisi.")) {
+            return;
+        }
+
+        if(activeChit) {
+            syncFormToChit(activeChit);
+            activeChit.status = 'Pending'; 
+            
+            document.body.style.cursor = 'wait';
+            const btnContainer = document.getElementById('actionButtonsContainer');
+            if(btnContainer) btnContainer.style.opacity = '0.5';
+
+            const success = await saveDB();
+            
+            document.body.style.cursor = 'default';
+            if(btnContainer) btnContainer.style.opacity = '1';
+
+            if (!success) return;
+
+            alert(`Selesai! Permohonan e-Chit [${activeChit.chitNo}] telah disemak dan dihantar ke Dashboard Pegawai JKR.`);
+            goHome();
+        }
+    }
+
+    async function requestContractorSign() {
+        if(activeChit) {
+            activeChit.status = 'Awaiting E-Sign';
+            syncFormToChit(activeChit);
+        }
+        
+        document.body.style.cursor = 'wait';
+        const btnContainer = document.getElementById('actionButtonsContainer');
+        if(btnContainer) btnContainer.style.opacity = '0.5';
+
+        const success = await saveDB();
+        
+        document.body.style.cursor = 'default';
+        if(btnContainer) btnContainer.style.opacity = '1';
+
+        if (!success) return;
+
+        renderActionButtons();
+        copySignLink();
+    }
+
+    function copySignLink(btnElement = null) {
+        if (!activeProject || !activeChit) return;
+
+        const baseUrl = window.location.origin + window.location.pathname;
+        const signLink = `${baseUrl}?mode=esign&project=${encodeURIComponent(activeProject.id)}&chit=${encodeURIComponent(activeChit.chitNo)}`;
+        
+        const tempInput = document.createElement("textarea");
+        tempInput.value = signLink;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        tempInput.setSelectionRange(0, 99999); 
+
+        let isCopied = false;
+        try { isCopied = document.execCommand("copy"); } 
+        catch (err) { isCopied = false; }
+        document.body.removeChild(tempInput);
+
+        if (btnElement) {
+            if (isCopied) {
+                alert("BERJAYA!\n\nPautan E-Sign telah disalin ke 'Clipboard'.\n\nLink: " + signLink);
+            } else {
+                prompt("Sila salin pautan E-Sign di bawah secara manual:", signLink);
+            }
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Pautan Telah Disalin!';
+            btnElement.classList.replace('btn-outline-primary', 'btn-success');
+            setTimeout(() => {
+                btnElement.innerHTML = originalText;
+                btnElement.classList.replace('btn-success', 'btn-outline-primary');
+            }, 3000);
+        } else {
+            prompt("PAUTAN BERJAYA DIJANA!\n\nSila SALIN (COPY) pautan di bawah untuk dihantar kepada Kontraktor (E-Sign):", signLink);
+        }
+    }
+
+    async function submitContractorEsign() {
+        document.getElementById('inNameContractorReceived').dispatchEvent(new Event('input'));
+        document.getElementById('inRoleContractorReceived').dispatchEvent(new Event('input'));
+        document.getElementById('inDateContractorReceived').dispatchEvent(new Event('input'));
+
+        if (padContractorReceivedObj && !padContractorReceivedObj.isEmpty()) {
+            document.getElementById('outSignContractorReceived').src = padContractorReceivedObj.toDataURL("image/png");
+        }
+
+        if(activeChit) {
+            activeChit.status = 'Received by Contractor';
+            syncFormToChit(activeChit);
+        }
+        
+        document.body.style.cursor = 'wait';
+        const btnContainer = document.getElementById('actionButtonsContainer');
+        if(btnContainer) btnContainer.style.opacity = '0.5';
+
+        const success = await saveDB(); 
+        
+        document.body.style.cursor = 'default';
+        if(btnContainer) btnContainer.style.opacity = '1';
+
+        if (!success) return;
+        
+        document.getElementById('esignFormArea').style.display = 'none';
+        document.getElementById('esignSuccessArea').style.display = 'block';
+    }
+
+    function cancelEsign() {
+        closeEsignAndGoHome();
+    }
+
+    function closeEsignAndGoHome() {
+        if(activeChit && activeChit.status === 'Received by Contractor') {
+            alert("Notifikasi 'Approval Chit Received by Contractor' telah dihantar ke Mode Pegawai untuk disemak dan dimuat turun.");
+        }
+
+        document.getElementById('mainFormPanel').style.display = 'flex';
+        document.getElementById('esignPanel').style.display = 'none';
+        document.getElementById('previewPanel').style.width = '60%';
+        
+        document.getElementById('esignFormArea').style.display = 'block';
+        document.getElementById('esignSuccessArea').style.display = 'none';
+        
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('roleSelectionScreen').style.display = 'flex';
+        
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    function handleUrlRouting(mode, projId, chitNo) {
+        activeProject = projectsDB.find(p => p.id === projId);
+        if(activeProject) activeChit = activeProject.chits.find(c => c.chitNo === chitNo);
+        
+        if (!activeChit) {
+            alert("Ralat: Dokumen e-Chit tidak dijumpai dalam pangkalan data. Sila pastikan pautan adalah sah.");
+            goHome();
+            return;
+        }
+
+        if (mode === 'esign' && activeChit.status === 'Awaiting E-Sign') {
+            document.getElementById('roleSelectionScreen').style.display = 'none';
+            document.getElementById('officerDashboardScreen').style.display = 'none';
+            
+            document.getElementById('mainApp').style.display = 'flex';
+            document.getElementById('mainFormPanel').style.display = 'none'; 
+            document.getElementById('esignPanel').style.display = 'flex'; 
+            document.getElementById('previewPanel').style.width = '60%';
+            
+            document.getElementById('inProject').value = activeProject.name;
+            document.getElementById('outProject').innerText = activeProject.name;
+            document.getElementById('inContract').value = activeProject.contract;
+            document.getElementById('outContract').innerText = activeProject.contract;
+            document.getElementById('inChit').value = activeChit.chitNo;
+            document.getElementById('outChit').innerText = activeChit.chitNo;
+            document.querySelectorAll('.chit-copy').forEach(el => el.innerText = activeChit.chitNo);
+            
+            document.getElementById('inCompanyName').value = activeChit.companyName || '';
+            document.getElementById('outCompanyName').innerText = activeChit.companyName || '';
+
+            document.getElementById('inWorkType').value = activeChit.type || '';
+            if(activeChit.otherWork) document.getElementById('inOtherWork').value = activeChit.otherWork;
+            updateWorkTypeDisplay();
+            
+            syncChitToForm(activeChit);
+
+            setTimeout(() => {
+                resizeCanvas();
+                scalePDF(); 
+            }, 150);
+        } 
+        else if (mode === 'check' && activeChit.status === 'Awaiting Checker') {
+            document.getElementById('roleSelectionScreen').style.display = 'none';
+            document.getElementById('officerDashboardScreen').style.display = 'none';
+            
+            document.getElementById('mainApp').style.display = 'flex';
+            document.getElementById('mainFormPanel').style.display = 'flex'; 
+            document.getElementById('esignPanel').style.display = 'none'; 
+            
+            currentRole = 'checker';
+            document.getElementById('roleBadge').innerText = 'Mod Penyemak (Checked By)';
+            document.getElementById('roleBadge').className = 'badge bg-info text-dark me-2 shadow-sm';
+            
+            // SEMBUNYIKAN HEADER DAN PART A KETIKA CHECKER MODE
+            document.getElementById('collapseHeader_wrapper').style.display = 'none';
+            document.getElementById('partAInputsDiv').style.display = 'none';
+            
+            document.getElementById('officerSectionItem').style.display = 'none';
+            
+            document.getElementById('inProject').value = activeProject.name;
+            document.getElementById('outProject').innerText = activeProject.name;
+            document.getElementById('inContract').value = activeProject.contract;
+            document.getElementById('outContract').innerText = activeProject.contract;
+            document.getElementById('inChit').value = activeChit.chitNo;
+            document.getElementById('outChit').innerText = activeChit.chitNo;
+            document.querySelectorAll('.chit-copy').forEach(el => el.innerText = activeChit.chitNo);
+            
+            document.getElementById('inCompanyName').value = activeChit.companyName || '';
+            document.getElementById('outCompanyName').innerText = activeChit.companyName || '';
+
+            document.getElementById('inWorkType').value = activeChit.type || '';
+            if(activeChit.otherWork) document.getElementById('inOtherWork').value = activeChit.otherWork;
+            updateWorkTypeDisplay();
+            
+            syncChitToForm(activeChit);
+
+            document.getElementById('checkedByCard').style.display = 'block';
+            toggleSectionEdit('checkedByCard', true);
+            
+            renderActionButtons();
+            
+            setTimeout(() => {
+                resizeCanvas();
+                scalePDF(); 
+            }, 150);
+        }
+        else {
+            alert("Pautan tidak sah atau e-Chit ini telah diproses.");
+            goHome(); 
+        }
+    }
+
+    function selectRole(role) {
+        currentRole = role;
+        activeChit = null; 
+        document.getElementById('roleSelectionScreen').style.display = 'none';
+
+        const roleBadge = document.getElementById('roleBadge');
+        const officerSectionItem = document.getElementById('officerSectionItem');
+        const collapsePartA = document.getElementById('collapsePartA');
+        const collapseOfficer = document.getElementById('collapseOfficer');
+
+        if (role === 'contractor') {
+            clearForm(); 
+            
+            document.getElementById('mainApp').style.display = 'flex';
+            document.getElementById('mainFormPanel').style.display = 'flex';
+            document.getElementById('esignPanel').style.display = 'none';
+            
+            roleBadge.innerText = 'Mod Pemohon (Submitted By)';
+            roleBadge.className = 'badge bg-primary me-2 shadow-sm';
+            
+            // PASTIKAN SEMUA INPUT ASAL DIPAPARKAN SEMULA
+            document.getElementById('collapseHeader_wrapper').style.display = 'block';
+            document.getElementById('partAInputsDiv').style.display = 'block';
+            
+            officerSectionItem.style.display = 'none';
+            collapsePartA.classList.add('show');
+            collapseOfficer.classList.remove('show');
+            
+            toggleSectionEdit('collapseHeader_wrapper', true);
+            toggleSectionEdit('partAInputsDiv', true);
+            document.getElementById('checkedByCard').style.display = 'none';
+
+            renderActionButtons();
+            
+            setTimeout(() => {
+                resizeCanvas();
+                scalePDF(); 
+            }, 150);
+            
+        } else if (role === 'officer') {
+            document.getElementById('officerDashboardScreen').style.display = 'block';
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = ''; 
+            renderFolders();
+        }
+    }
+
+    function executeSearch() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        if (query === '') {
+            renderFolders(); 
+            return;
+        }
+
+        const content = document.getElementById('dashboardContent');
+        let resultsHtml = `<div class="d-flex align-items-center justify-content-between mb-3">
+                               <h6 class="mb-0 fw-bold text-secondary text-uppercase"><i class="bi bi-search me-2"></i>Hasil Carian: "${query}"</h6>
+                               <button class="btn btn-sm btn-light border" onclick="clearSearch()">Batal Carian</button>
+                           </div>
+                           <div class="list-group shadow-sm border-0 rounded-3 overflow-hidden">`;
+
+        let matchCount = 0;
+
+        projectsDB.forEach(p => {
+            p.chits.forEach(c => {
+                const matchProject = p.name.toLowerCase().includes(query);
+                const matchChitNo = c.chitNo.toLowerCase().includes(query);
+                const matchType = c.type.toLowerCase().includes(query);
+
+                if (matchProject || matchChitNo || matchType) {
+                    matchCount++;
+                    let badgeClass = 'bg-secondary';
+                    let iconClass = 'bi-check-circle';
+                    
+                    if (c.status === 'Pending') { badgeClass = 'bg-danger'; iconClass = 'bi-exclamation-circle'; }
+                    else if (c.status === 'Awaiting Checker') { badgeClass = 'bg-secondary text-white'; iconClass = 'bi-person-gear'; }
+                    else if (c.status === 'Awaiting SO') { badgeClass = 'bg-warning text-dark'; iconClass = 'bi-hourglass-split'; }
+                    else if (c.status === 'Awaiting Engineer') { badgeClass = 'bg-info text-dark'; iconClass = 'bi-hourglass-split'; }
+                    else if (c.status === 'Awaiting AE') { badgeClass = 'bg-primary text-white'; iconClass = 'bi-person-plus'; }
+                    else if (c.status === 'Awaiting E-Sign') { badgeClass = 'bg-primary text-white'; iconClass = 'bi-whatsapp'; }
+                    else if (c.status === 'Received by Contractor') { badgeClass = 'bg-success'; iconClass = 'bi-check-circle'; }
+                    
+                    resultsHtml += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
+                        <div>
+                            <small class="text-primary fw-bold d-block mb-1"><i class="bi bi-folder2-open me-1"></i> ${p.name}</small>
+                            <h6 class="mb-1 fw-bold text-dark" style="font-size: 1rem;">Chit No: ${c.chitNo} <span class="badge ${badgeClass} ms-2"><i class="bi ${iconClass} me-1"></i>${c.status}</span></h6>
+                            <small class="text-muted d-block mt-1"><i class="bi bi-tools me-1"></i>${c.type}</small>
+                            <small class="text-muted"><i class="bi bi-person me-1"></i>Oleh <b>${c.submitter}</b> pada ${c.date}</small>
+                        </div>
+                        
+                        <div class="text-end d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-warning rounded-circle" onclick="openMoveChitModal(event, '${p.id}', '${c.chitNo}')" title="Pindah Fail ke Folder Lain"><i class="bi bi-folder-symlink"></i></button>
+                            <button class="btn btn-sm btn-outline-primary rounded-circle" onclick="editChitNo(event, '${p.id}', '${c.chitNo}')" title="Edit No. Chit"><i class="bi bi-pencil-fill"></i></button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteChit(event, '${p.id}', '${c.chitNo}')" title="Padam e-Chit ini"><i class="bi bi-trash-fill"></i></button>
+                            <button class="btn btn-sm btn-primary rounded-pill px-3 ms-2" onclick="openChitForm('${p.id}', '${c.chitNo}')">Buka Semakan <i class="bi bi-chevron-right ms-1"></i></button>
+                        </div>
+                    </div>`;
+                }
+            });
+        });
+
+        if (matchCount === 0) {
+            resultsHtml += '<div class="list-group-item text-center text-muted py-5 bg-white"><i class="bi bi-search d-block mb-2" style="font-size: 2rem;"></i>Tiada rekod padanan dijumpai.</div>';
+        }
+
+        resultsHtml += '</div>';
+        content.innerHTML = resultsHtml;
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        renderFolders();
+    }
+
+    function renderFolders() {
+        const content = document.getElementById('dashboardContent');
+        
+        let totalReceived = 0;
+        projectsDB.forEach(p => {
+            totalReceived += p.chits.filter(c => c.status === 'Received by Contractor').length;
+        });
+
+        let notificationHtml = '';
+        if (totalReceived > 0) {
+            notificationHtml = `
+            <div class="alert alert-success d-flex align-items-center shadow-sm mb-4" role="alert">
+                <i class="bi bi-bell-fill fs-4 me-3"></i>
+                <div>
+                    <strong>Notifikasi Baru:</strong> Terdapat ${totalReceived} Approval Chit yang telah disahkan (Received by Contractor). Sila review dan muat turun rekod.
+                </div>
+            </div>`;
+        }
+
+        let html = notificationHtml + '<h6 class="mb-3 fw-bold text-secondary text-uppercase"><i class="bi bi-folder2-open me-2"></i>Folder Projek Semasa</h6><div class="row g-4">';
+        
+        projectsDB.forEach(p => {
+            let pendingCount = p.chits.filter(c => ['Pending', 'Awaiting Checker', 'Awaiting SO', 'Awaiting Engineer', 'Awaiting AE', 'Awaiting E-Sign'].includes(c.status)).length;
+            let receivedCount = p.chits.filter(c => c.status === 'Received by Contractor').length;
+            
+            let badgeHtml = '';
+            if (pendingCount > 0 || receivedCount > 0) {
+                badgeHtml += `<div class="mt-3">`;
+                if (pendingCount > 0) badgeHtml += `<span class="badge bg-danger rounded-pill shadow-sm me-1">${pendingCount} Tindakan Aktif</span>`;
+                if (receivedCount > 0) badgeHtml += `<span class="badge bg-success rounded-pill shadow-sm">${receivedCount} Sedia Download</span>`;
+                badgeHtml += `</div>`;
+            } else {
+                 badgeHtml = `<span class="badge bg-secondary rounded-pill mt-3 shadow-sm">Tiada Tunggakan</span>`;
+            }
+                
+            html += `
+            <div class="col-md-4 col-sm-6">
+                <div class="card folder-card border-0 shadow-sm h-100 p-2 position-relative" onclick="openProject('${p.id}')">
+                    <!-- FUNGSI EDIT DAN PADAM FOLDER -->
+                    <div class="position-absolute top-0 end-0 p-2" style="z-index: 10;">
+                        <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle me-1" onclick="editProjectName(event, '${p.id}')" title="Edit Nama Projek"><i class="bi bi-pencil-fill"></i></button>
+                        <button class="btn btn-sm btn-light text-danger shadow-sm rounded-circle" onclick="deleteProject(event, '${p.id}')" title="Padam Projek"><i class="bi bi-trash-fill"></i></button>
+                    </div>
+
+                    <div class="card-body text-center d-flex flex-column align-items-center justify-content-center pt-4">
+                        <i class="bi bi-folder-fill text-warning mb-2" style="font-size: 3.5rem; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.1));"></i>
+                        <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">${p.name}</h6>
+                        <small class="text-muted d-block" style="font-size: 0.75rem;">${p.contract}</small>
+                        ${badgeHtml}
+                    </div>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        content.innerHTML = html;
+    }
+
+    function openProject(projectId) {
+        const project = projectsDB.find(p => p.id === projectId);
+        const content = document.getElementById('dashboardContent');
+        
+        let html = `
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-folder2-open text-warning me-2"></i>${project.name}</h5>
+                <button class="btn btn-sm btn-light border fw-bold" onclick="renderFolders()"><i class="bi bi-arrow-left me-1"></i> Kembali ke Folder</button>
+            </div>
+            <div class="list-group shadow-sm border-0 rounded-3 overflow-hidden">
+        `;
+        
+        if (project.chits.length === 0) {
+            html += '<div class="list-group-item text-center text-muted py-5 bg-white"><i class="bi bi-inbox d-block mb-2" style="font-size: 2rem;"></i>Tiada rekod e-Chit untuk projek ini.</div>';
+        } else {
+            project.chits.forEach(c => {
+                let badgeClass = 'bg-secondary';
+                let iconClass = 'bi-check-circle';
+                
+                if (c.status === 'Pending') { badgeClass = 'bg-danger'; iconClass = 'bi-exclamation-circle'; }
+                else if (c.status === 'Awaiting Checker') { badgeClass = 'bg-secondary text-white'; iconClass = 'bi-person-gear'; }
+                else if (c.status === 'Awaiting SO') { badgeClass = 'bg-warning text-dark'; iconClass = 'bi-hourglass-split'; }
+                else if (c.status === 'Awaiting Engineer') { badgeClass = 'bg-info text-dark'; iconClass = 'bi-hourglass-split'; }
+                else if (c.status === 'Awaiting AE') { badgeClass = 'bg-primary text-white'; iconClass = 'bi-person-plus'; }
+                else if (c.status === 'Awaiting E-Sign') { badgeClass = 'bg-primary text-white'; iconClass = 'bi-whatsapp'; }
+                else if (c.status === 'Received by Contractor') { badgeClass = 'bg-success'; iconClass = 'bi-check-circle'; }
+                                
+                html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
+                    <div>
+                        <h6 class="mb-1 fw-bold text-primary" style="font-size: 1rem;">Chit No: ${c.chitNo} <span class="badge ${badgeClass} ms-2"><i class="bi ${iconClass} me-1"></i>${c.status}</span></h6>
+                        <small class="text-muted d-block mt-1"><i class="bi bi-tools me-1"></i>${c.type}</small>
+                        <small class="text-muted"><i class="bi bi-person me-1"></i>Dikemukakan oleh <b>${c.submitter}</b> pada ${c.date}</small>
+                    </div>
+                    
+                    <div class="text-end d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-warning rounded-circle" onclick="openMoveChitModal(event, '${project.id}', '${c.chitNo}')" title="Pindah Fail ke Folder Lain"><i class="bi bi-folder-symlink"></i></button>
+                        <button class="btn btn-sm btn-outline-primary rounded-circle" onclick="editChitNo(event, '${project.id}', '${c.chitNo}')" title="Edit No. Chit"><i class="bi bi-pencil-fill"></i></button>
+                        <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteChit(event, '${project.id}', '${c.chitNo}')" title="Padam e-Chit ini"><i class="bi bi-trash-fill"></i></button>
+                        <button class="btn btn-sm btn-primary rounded-pill px-3 ms-2" onclick="openChitForm('${project.id}', '${c.chitNo}')">Buka Semakan <i class="bi bi-chevron-right ms-1"></i></button>
+                    </div>
+                </div>`;
+            });
+        }
+        html += '</div>';
+        content.innerHTML = html;
+    }
+
+    function openChitForm(projectId, chitNo) {
+        activeProject = projectsDB.find(p => p.id === projectId);
+        activeChit = activeProject.chits.find(c => c.chitNo === chitNo);
+        
+        document.getElementById('officerDashboardScreen').style.display = 'none';
+        
+        document.getElementById('mainApp').style.display = 'flex';
+        document.getElementById('mainFormPanel').style.display = 'flex';
+        document.getElementById('esignPanel').style.display = 'none';
+        
+        document.getElementById('inProject').value = activeProject.name;
+        document.getElementById('outProject').innerText = activeProject.name;
+        document.getElementById('inContract').value = activeProject.contract;
+        document.getElementById('outContract').innerText = activeProject.contract;
+        document.getElementById('inChit').value = chitNo;
+        document.getElementById('outChit').innerText = chitNo;
+        document.querySelectorAll('.chit-copy').forEach(el => el.innerText = chitNo);
+        
+        document.getElementById('inWorkType').value = activeChit.type || '';
+        if(activeChit.otherWork) document.getElementById('inOtherWork').value = activeChit.otherWork;
+        updateWorkTypeDisplay();
+
+        syncChitToForm(activeChit);
+
+        document.getElementById('roleBadge').innerText = 'Mode Pegawai SO/Jurutera';
+        document.getElementById('roleBadge').className = 'badge bg-success me-2 shadow-sm';
+        
+        // PAPARKAN SEMUA HEADER KETIKA DIBUKA OLEH PEGAWAI
+        document.getElementById('collapseHeader_wrapper').style.display = 'block';
+        document.getElementById('partAInputsDiv').style.display = 'block';
+
+        document.getElementById('officerSectionItem').style.display = 'block';
+        document.getElementById('collapsePartA').classList.remove('show');
+        document.getElementById('collapseOfficer').classList.add('show');
+        
+        toggleSectionEdit('collapseHeader_wrapper', false);
+        toggleSectionEdit('partAInputsDiv', false);
+        document.getElementById('checkedByCard').style.display = 'block';
+        toggleSectionEdit('checkedByCard', false);
+        toggleSectionEdit('collapseOfficer', true);
+        
+        // SEMBUNYIKAN SEMUA INPUT PEGAWAI DAHULU
+        document.getElementById('officerReceivedByDiv').style.display = 'none';
+        document.getElementById('officerSODiv').style.display = 'none';
+        document.getElementById('officerEngineerDiv').style.display = 'none';
+        if(document.getElementById('officerAEDiv')) document.getElementById('officerAEDiv').style.display = 'none';
+
+        // TAMPILKAN INPUT MENGIKUT STATUS PERINGKAT PEGAWAI
+        if (activeChit.status === 'Pending') {
+            document.getElementById('officerReceivedByDiv').style.display = 'block';
+        } else if (activeChit.status === 'Awaiting SO') {
+            document.getElementById('officerSODiv').style.display = 'block';
+        } else if (activeChit.status === 'Awaiting Engineer') {
+            document.getElementById('officerEngineerDiv').style.display = 'block';
+        } else if (activeChit.status === 'Awaiting AE') {
+            if(document.getElementById('officerAEDiv')) document.getElementById('officerAEDiv').style.display = 'block';
+        }
+
+        renderActionButtons(); 
+        
+        setTimeout(() => {
+            resizeCanvas();
+            scalePDF(); 
+        }, 150);
+    }
+
+    function goHome() {
+        if (currentRole === 'officer') {
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('officerDashboardScreen').style.display = 'block';
+            renderFolders();
+        } else {
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('roleSelectionScreen').style.display = 'flex';
+            currentRole = '';
+        }
+    }
+
+    function goHomeFromDashboard() {
+        document.getElementById('officerDashboardScreen').style.display = 'none';
+        document.getElementById('roleSelectionScreen').style.display = 'flex';
+        currentRole = '';
+    }
+
+    async function editProjectName(event, projectId) {
+        if (event) event.stopPropagation(); 
+        const project = projectsDB.find(p => p.id === projectId);
+        if (!project) return;
+        const newName = prompt("Masukkan nama baharu untuk Projek ini:", project.name);
+        if (newName && newName.trim() !== "") {
+            project.name = newName.trim();
+            await saveDB();
+            renderFolders();
+        }
+    }
+
+    async function deleteProject(event, projectId) {
+        if (event) event.stopPropagation(); 
+        const project = projectsDB.find(p => p.id === projectId);
+        if (!project) return;
+
+        if (project.chits && project.chits.length > 0) {
+            alert("MAKLUMAN: Anda tidak boleh memadam folder ini kerana ia masih mengandungi fail e-Chit.\n\nSila buka folder ini dan padam fail e-Chit satu persatu terlebih dahulu jika anda benar-benar mahu memadamnya.");
+            return;
+        }
+
+        if (confirm("Adakah anda pasti mahu memadam folder projek yang KOSONG ini secara kekal?")) {
+            projectsDB = projectsDB.filter(p => p.id !== projectId);
+            
+            if (dbConfigured && fDeleteDoc && fDoc && fCollection && fDb) {
+                fDeleteDoc(fDoc(fCollection(fDb, 'projects'), String(projectId))).catch(err => console.error(err));
+            }
+            
+            await saveDB();
+            renderFolders();
+        }
+    }
+
+    async function editChitNo(event, projectId, oldChitNo) {
+        if (event) event.stopPropagation(); 
+        const project = projectsDB.find(p => p.id === projectId);
+        if (!project) return;
+        const chit = project.chits.find(c => c.chitNo === oldChitNo);
+        if (!chit) return;
+        
+        const newChitNo = prompt("Masukkan nombor/nama fail Chit baharu:", chit.chitNo);
+        if (newChitNo && newChitNo.trim() !== "" && newChitNo.trim() !== oldChitNo) {
+            if (project.chits.some(c => c.chitNo === newChitNo.trim())) {
+                alert("Ralat: Nombor Chit ini sudah sedia wujud dalam projek ini!");
+                return;
+            }
+            chit.chitNo = newChitNo.trim();
+            await saveDB();
+            openProject(projectId);
+        }
+    }
+
+    async function deleteChit(event, projectId, chitNo) {
+        if (event) event.stopPropagation(); 
+        if (confirm(`Adakah anda pasti mahu memadam rekod permohonan e-Chit [${chitNo}] ini secara kekal?`)) {
+            const project = projectsDB.find(p => p.id === projectId);
+            if (project) {
+                project.chits = project.chits.filter(c => c.chitNo !== chitNo);
+                await saveDB();
+                openProject(projectId);
+            }
+        }
+    }
+
+    function openMoveChitModal(event, projectId, chitNo) {
+        if (event) event.stopPropagation();
+        moveSourceProjectId = projectId;
+        moveChitNo = chitNo;
+
+        const selectEl = document.getElementById('targetProjectSelect');
+        selectEl.innerHTML = '<option value="">-- Sila Pilih Folder --</option>';
+
+        projectsDB.forEach(p => {
+            if (p.id !== projectId) {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name + ' (' + p.contract + ')';
+                selectEl.appendChild(option);
+            }
+        });
+
+        if (selectEl.options.length <= 1) {
+            alert("Tiada folder projek lain yang tersedia untuk dipindahkan.");
+            return;
+        }
+
+        let modal = bootstrap.Modal.getInstance(document.getElementById('moveChitModal'));
+        if (!modal) modal = new bootstrap.Modal(document.getElementById('moveChitModal'));
+        modal.show();
+    }
+
+    async function executeMoveChit() {
+        const targetId = document.getElementById('targetProjectSelect').value;
+        if (!targetId) {
+            alert("Sila pilih folder destinasi terlebih dahulu.");
+            return;
+        }
+
+        const sourceProject = projectsDB.find(p => p.id === moveSourceProjectId);
+        const targetProject = projectsDB.find(p => p.id === targetId);
+
+        if (!sourceProject || !targetProject) return;
+
+        const chitIndex = sourceProject.chits.findIndex(c => c.chitNo === moveChitNo);
+        if (chitIndex === -1) return;
+
+        if (targetProject.chits.some(c => c.chitNo === moveChitNo)) {
+            alert(`Ralat: Nombor Chit [${moveChitNo}] sudah wujud dalam folder "${targetProject.name}". Sila tukar nombor chit terlebih dahulu sebelum memindahkannya.`);
+            return;
+        }
+
+        const chitToMove = sourceProject.chits[chitIndex];
+        sourceProject.chits.splice(chitIndex, 1);
+        targetProject.chits.push(chitToMove);
+
+        await saveDB();
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('moveChitModal'));
+        if (modal) modal.hide();
+
+        alert(`Berjaya! e-Chit [${moveChitNo}] telah dipindahkan ke folder "${targetProject.name}". Status dan segala maklumat telah dikekalkan.`);
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && searchInput.value.trim() !== '') {
+            executeSearch(); 
+        } else {
+            openProject(moveSourceProjectId); 
+        }
+    }
+
+    let fDb = null;
+    let fCollection = null;
+    let fDoc = null;
+    let fSetDoc = null;
+    let fDeleteDoc = null; 
+    let dbConfigured = false; 
+    let isDbInitialized = false;
+    let initialUrlHandled = false; 
+
+    Object.assign(window, {
+        showOfficerLogin, attemptOfficerLogin, showOfficerSettings, saveOfficerSettings,
+        goHomeFromDashboard, goHome, selectRole,
+        clearPad, 
+        requestContractorSign, copySignLink, generatePDF, cancelEsign,
+        submitContractorEsign, closeEsignAndGoHome, updateApprovalStatus, openProject, openChitForm, renderFolders,
+        editProjectName, deleteProject, editChitNo, deleteChit, executeSearch, clearSearch, generateCheckerLink, submitToOfficer, handleUrlRouting,
+        saveOfficerDraft, openMoveChitModal, executeMoveChit, copyCheckLink
+    });
+
+    const firebaseConfig = {
+  	apiKey: "AIzaSyAPLoAMmXdW6mBFAbW0qZcn_kmTo9yHpWI",
+  	authDomain: "sistem-e-chit.firebaseapp.com",
+  	projectId: "sistem-e-chit",
+  	storageBucket: "sistem-e-chit.firebasestorage.app",
+  	messagingSenderId: "307471863121",
+  	appId: "1:307471863121:web:a5fd46bd11919550f75770",
+ 	 measurementId: "G-F5JN5XR0V3"
+    };
+
+    async function initCloudDatabase() {
+        try {
+            const moduleApp = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+            const moduleAuth = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+            const moduleFirestore = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+            
+            fCollection = moduleFirestore.collection;
+            fDoc = moduleFirestore.doc;
+            fSetDoc = moduleFirestore.setDoc;
+            fDeleteDoc = moduleFirestore.deleteDoc; 
+
+            const app = moduleApp.initializeApp(firebaseConfig);
+            const auth = moduleAuth.getAuth(app); 
+            fDb = moduleFirestore.getFirestore(app);
+
+            await moduleAuth.signInAnonymously(auth);
+            dbConfigured = true;
+            
+            const statusMsg = document.getElementById('cloudStatusMsg');
+            if (statusMsg) {
+                statusMsg.innerHTML = '<i class="bi bi-cloud-check-fill text-success fs-5 align-middle me-1"></i> Sistem Online (Data Synchronised)';
+                statusMsg.style.borderColor = '#198754';
+            }
+
+            moduleAuth.onAuthStateChanged(auth, (user) => {
+                if (!user) return;
+                
+                // MENGGUNAKAN LALUAN RASMI MEMATUHI PERATURAN FIRESTORE
+                const projectsRef = fCollection(fDb, 'artifacts', 'sistem-e-chit', 'public', 'data', 'projects');
+                moduleFirestore.onSnapshot(projectsRef, (snapshot) => {
+                    if (!snapshot.empty) {
+                        projectsDB = [];
+                        snapshot.forEach(doc => projectsDB.push(doc.data()));
+                        projectsDB.sort((a,b) => String(a.id).localeCompare(String(b.id))); 
+                        
+                        if (currentRole === 'officer') {
+                            if (activeProject && document.getElementById('mainApp').style.display !== 'flex') {
+                                openProject(activeProject.id);
+                            } else if (!activeProject) {
+                                renderFolders();
+                            }
+                        }
+                        
+                        if (activeProject) {
+                            activeProject = projectsDB.find(p => p.id === activeProject.id);
+                            if(activeProject && activeChit) activeChit = activeProject.chits.find(c => c.chitNo === activeChit.chitNo);
+                        }
+                    } else if (!isDbInitialized) {
+                         defaultDB.forEach(p => {
+                             fSetDoc(fDoc(projectsRef, String(p.id)), p);
+                         });
+                    }
+                    isDbInitialized = true;
+
+                    if (!initialUrlHandled) {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const mode = urlParams.get('mode');
+                        if (mode) {
+                            const pId = urlParams.get('project');
+                            const cNo = urlParams.get('chit');
+                            const foundP = projectsDB.find(p => p.id === pId);
+                            const foundC = foundP ? foundP.chits.find(c => c.chitNo === cNo) : null;
+                            
+                            if (foundC) {
+                                initialUrlHandled = true;
+                                if (window.routeTimeout) clearTimeout(window.routeTimeout);
+                                handleUrlRouting(mode, pId, cNo);
+                            } else if (!window.routeTimeout) {
+                                if (statusMsg) {
+                                    statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyemak data permohonan...';
+                                }
+                                window.routeTimeout = setTimeout(() => {
+                                    if (!initialUrlHandled) {
+                                        initialUrlHandled = true;
+                                        alert("Ralat: Dokumen e-Chit tidak dijumpai dalam pangkalan data. Sila pastikan pautan adalah sah.");
+                                        goHome();
+                                    }
+                                }, 5000);
+                            }
+                        } else {
+                            initialUrlHandled = true;
+                        }
+                    }
+
+                }, (error) => {
+                    console.error("Gagal menyambung ke Firestore.", error);
+                });
+            });
+        } catch(err) {
+            console.error("Firebase tidak dapat dijalankan. Bergerak ke mod LocalStorage.", err);
+            const statusMsg = document.getElementById('cloudStatusMsg');
+            if (statusMsg) {
+                statusMsg.innerHTML = '<i class="bi bi-cloud-slash-fill text-danger fs-5 align-middle me-1"></i> Ralat: Sistem Offline. Sila pastikan Embed guna URL Netlify.';
+                statusMsg.style.borderColor = '#dc3545';
+                statusMsg.style.color = '#dc3545';
+            }
+            if (!initialUrlHandled) {
+                initialUrlHandled = true;
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('mode')) {
+                    handleUrlRouting(urlParams.get('mode'), urlParams.get('project'), urlParams.get('chit'));
+                }
+            }
+        }
+    }
+
+    async function saveDB() {
+        if (!dbConfigured) {
+            try {
+                localStorage.setItem('jkr_echit_db', JSON.stringify(projectsDB));
+                return true;
+            } catch (e) {
+                console.error(e);
+                alert("Ralat Storan: Saiz dokumen melebihi memori. Sila gunakan gambar yang lebih sedikit/kecil.");
+                return false;
+            }
+        }
+        
+        try {
+            // MENGGUNAKAN LALUAN RASMI MEMATUHI PERATURAN FIRESTORE
+            const projectsRef = fCollection(fDb, 'artifacts', 'sistem-e-chit', 'public', 'data', 'projects');
+            const savePromises = projectsDB.map(p => fSetDoc(fDoc(projectsRef, String(p.id)), p));
+            await Promise.all(savePromises);
+            return true;
+        } catch (err) {
+            console.error(err);
+            alert("Ralat Cloud: Saiz gambar melebihi had maksimum muat naik awan (1MB). Sila buang gambar atau kurangkan penggunaan fail PDF lukisan (Drawing).");
+            return false;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const stored = localStorage.getItem('jkr_echit_db');
+        if(stored) projectsDB = JSON.parse(stored);
+        else projectsDB = defaultDB;
+
+        initCloudDatabase(); 
+    });
+
+</script>
+</body>
+</html>
