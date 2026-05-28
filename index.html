@@ -2677,7 +2677,8 @@
             projectsDB = projectsDB.filter(p => p.id !== projectId);
             
             if (dbConfigured && fDeleteDoc && fDoc && fCollection && fDb) {
-                fDeleteDoc(fDoc(fCollection(fDb, 'projects'), String(projectId))).catch(err => console.error(err));
+                // MENGGUNAKAN LALUAN RASMI UNTUK DELETE SUPAYA DATA BETUL-BETUL TERPADAM DI CLOUD
+                fDeleteDoc(fDoc(fCollection(fDb, 'artifacts', 'sistem-e-chit', 'public', 'data', 'projects'), String(projectId))).catch(err => console.error(err));
             }
             
             await saveDB();
